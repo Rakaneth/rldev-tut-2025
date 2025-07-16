@@ -30,3 +30,7 @@ This week, I decided to lay a good bit of plumbing down - more than one would ex
 I am using the built-in Raylib 2D camera for zoom. I haven't decided if I will use scrolling in this game or not, but if I do, I will wind up implementing my own hand-rolled basic camera that I've been using in toy roguelikes for many years. That decision can wait until next week. The play area will be 40 by 30 tiles, with UI elements going directly on top.
 
 Another goal I had was to add just a bit more polish than I normally would with ASCII tiles. I have the bones of smooth movement in this current implementation, but time will tell if I continue down this path.
+
+### 2025-07-16
+
+Added the Windows build script and moved the week1 tag. I am satisified for Week 1.
