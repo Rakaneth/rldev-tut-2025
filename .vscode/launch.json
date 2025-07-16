@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "name": "(Linux) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/bin/Debug/rltut",
+            "cwd": "${workspaceRoot}/bin/Debug",
+            "preLaunchTask": "build-debug"
+        },
+    ]
+}
