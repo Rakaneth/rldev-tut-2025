@@ -79,7 +79,7 @@ loc_to_screen :: proc(p: Point) -> [2]f32 {
 
 move_by :: proc(p: Point, dir: Direction) {
 	new_pos := p + Direction_Offsets[dir]
-	if new_pos.x >= 0 && new_pos.y >= 0 && new_pos.x < WORLD_PIX_W && new_pos.y < WORLD_PIX_H {
+	if new_pos.x >= 0 && new_pos.y >= 0 && new_pos.x < WORLD_TILE_W && new_pos.y < WORLD_TILE_H {
 		_hero_screen_to = loc_to_screen(new_pos)
 		_hero_loc = new_pos
 		_state = .Move
