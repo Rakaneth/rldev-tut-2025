@@ -23,7 +23,7 @@ I am working in a WSL Ubuntu instance on a Windows host. Windows build scripts w
 
 ### Plumbing Work
 
-![Moving Character](assets/screenshots/Week1.png)
+![Moving Character](assets/screenshots/Week1.gif)
 
 This week, I decided to lay a good bit of plumbing down - more than one would expect for the simple task of getting an @ moving. I have the benefit of some experience here, as I was recently tinkering with Odin and Raylib before this. I'll be using an old version of the Micro Roguelike Tileset from [Kenney](https://kenney.nl/assets/micro-roguelike), embedding it directly into the executable. Since many asset licenses prohibit redistributing assets, I like that it is relatively painless to embed a file into an executable with Odin's `#load` function.
 
