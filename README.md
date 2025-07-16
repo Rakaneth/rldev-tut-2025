@@ -1,6 +1,6 @@
 # RoguelikeDev Does the Complete Roguelike Tutorial 2025
 
-[RogueLike Dev Logo](assets/screenshots/GEyBFMC.png)
+![RogueLike Dev Logo](assets/screenshots/GEyBFMC.png)
 
 Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/roguelikedev/comments/1luh8og/roguelikedev_does_the_complete_roguelike_tutorial/) Complete Roguelike Tutorial 2025 event. My goals are as such:
 
