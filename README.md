@@ -34,3 +34,70 @@ Another goal I had was to add just a bit more polish than I normally would with 
 ### 2025-07-16
 
 Added the Windows build script and moved the week1 tag. I am satisified for Week 1.
+
+## Week 2 (2025-07-22) Basic entities, map, dungeon generation
+
+No new code added today; currently brainstorming how I will lay out maps. My goto method is a 1-dimensional array indexed by width.
+I will try to set up a new branch, as well as tags, for each week.
+
+### 2D index into 1D array
+
+Imagine a 3x3 map:
+
+```
+###
+#X#
+###
+```
+
+The `X` is at point (1, 1) in a standard coordinate system with y increasing downwards. Now, moving left to right, then top to bottom, count from zero through the map:
+
+```
+012
+345
+678
+```
+
+Each number is an index into the array storing the map. Thus, our point (1, 1) is at index 4, There is a simple way to calculate this index for any point int he map, given the width of the map (here 3):
+
+```
+index = y * map_width + x 
+    -> 1 * 3 + 1 
+    -> 4
+```
+
+In fact, there is also a way to decompose an array index into a unique coordinate, again given the width of the map:
+
+```
+x = index % map_width
+y = floor(index / map_width) /* Integer Division */
+```
+
+As in the above example:
+```
+x = 4 % 3 -> 1
+y = 4 / 3 -> 1
+```
+
+I usually wrap these operations into two helper functions that I call `idx` and `deidx` respectively. Algorithms and procedures will work with 2D coordinates and go into 1D mode only when interfacing with the raw data.
+
+I've tinkered a lot with this design - not just in Odin, but in other languages like C - and I do like this pattern for low-level languages.
+
+### Tiles
+
+Tiles themselves will be an enumeration. Odin does magical things with enumerations (see my sprite atlas implementation).
+That enum will look something like this:
+
+```odin
+Tile :: enum {
+    NullTile,
+    Wall,
+    Floor,
+    DoorClosed,
+    DoorOpen,
+    StairsDown,
+}
+```
+
+The map data will be an array whose items are members of this enumeration. This allows the map data to be lightweight.
+Anything else associated with tiles - like sprites and terrain properties - can be dealt with using switch statements at the sites where they are needed.
