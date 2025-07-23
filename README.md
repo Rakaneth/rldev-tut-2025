@@ -101,3 +101,11 @@ Tile :: enum {
 
 The map data will be an array whose items are members of this enumeration. This allows the map data to be lightweight.
 Anything else associated with tiles - like sprites and terrain properties - can be dealt with using switch statements at the sites where they are needed.
+
+### 2025-07-23
+
+I am going to stick with what I know for the map, using the system I detailed above. I will also use Odin's parametric polymorphism (generics) features to make the grid structure generic, so I have the option to use it for other things like LOS and explored tiles.
+
+I have begun refactoring things to separate files as well. 
+
+Basic map drawing is in. Still haven't decided if I want to support scrolling maps yet.
