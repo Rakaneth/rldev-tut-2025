@@ -1,5 +1,9 @@
 package main
 
+import "core:container/queue"
+import "core:fmt"
+import "core:math/rand"
+
 Point :: [2]int
 
 Direction :: enum {
@@ -102,6 +106,17 @@ WALL_SET: bit_set[Terrain] : {
 
 /* map-specific functions */
 TerrainData :: Grid(Terrain)
+WallFloor :: Grid(bool)
+
+wf_debug_print :: proc(m: WallFloor) {
+	for y in 0 ..< m.height {
+		for x in 0 ..< m.width {
+			to_print := grid_get(m, {x, y}) ? "." : "#"
+			fmt.print(to_print)
+		}
+		fmt.println("")
+	}
+}
 
 map_is_wall :: proc(m: TerrainData, pos: Point) -> bool {
 	return grid_get(m, pos) in WALL_SET
@@ -136,5 +151,50 @@ arena :: proc(width, height: int) -> TerrainData {
 			grid_set(&m, {x, y}, to_set)
 		}
 	}
+	return m
+}
+
+wf_recursive :: proc(width, height: int, rand_factor: int = 0) -> WallFloor {
+	assert(width & 1 == 1 && height & 1 == 1)
+	q: queue.Queue(Point)
+	queue.init(&q)
+	m := grid_create(width, height, bool)
+	cur: Point = {
+		1 + 2 * (rand_next_int(1, width - 1) / 2),
+		1 + 2 * (rand_next_int(1, height - 1) / 2),
+	}
+	grid_set(&m, cur, true)
+	queue.push_back(&q, cur)
+	next: Point
+	blocked := false
+	dirs: [4]Direction = {.Down, .Left, .Right, .Up}
+	rand.shuffle(dirs[:])
+
+	can_use :: proc(wf: WallFloor, pos: Point) -> bool {
+		return grid_in_bounds(wf, pos) && !grid_get(wf, pos) && pos.x >= 1 && pos.y >= 1
+	}
+
+	for queue.len(q) > 0 {
+		blocked = false
+		cur = queue.pop_front(&q)
+		for !blocked {
+			blocked = true
+			if rand_next_int(0, rand_factor) == 0 do rand.shuffle(dirs[:])
+			for next_dir in dirs {
+				offset := Direction_Offsets[next_dir] * 2
+				next = cur + offset
+				if can_use(m, next) {
+					blocked = false
+					between := cur + Direction_Offsets[next_dir]
+					grid_set(&m, next, true)
+					grid_set(&m, between, true)
+					queue.push_back(&q, next)
+					cur = next
+					break
+				}
+			}
+		}
+	}
+
 	return m
 }
