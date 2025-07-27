@@ -17,6 +17,8 @@ Atlas_Tile :: enum {
 	WallHorz,
 	WallVertLeft,
 	WallVertRight,
+	WallTLeft,
+	WallTRight,
 	EmptySpace,
 	NullTile,
 	DoorClosed,
@@ -39,6 +41,8 @@ TextureAtlas := [Atlas_Tile]rl.Rectangle {
 	.WallHorz       = {8, 0, TILE_SIZE, TILE_SIZE},
 	.WallVertLeft   = {0, 8, TILE_SIZE, TILE_SIZE},
 	.WallVertRight  = {24, 8, TILE_SIZE, TILE_SIZE},
+	.WallTLeft      = {0, 40, TILE_SIZE, TILE_SIZE},
+	.WallTRight     = {8, 40, TILE_SIZE, TILE_SIZE},
 }
 
 TileRender :: struct {
@@ -56,6 +60,8 @@ TerrainToAtlas := [Terrain]TileRender {
 	.WallHorz       = {.WallHorz, STONE_LIGHT},
 	.WallVertLeft   = {.WallVertLeft, STONE_LIGHT},
 	.WallVertRight  = {.WallVertRight, STONE_LIGHT},
+	.WallTLeft      = {.WallTLeft, STONE_LIGHT},
+	.WallTRight     = {.WallTRight, STONE_LIGHT},
 	.DoorClosed     = {.DoorClosed, WOOD},
 	.DoorOpen       = {.DoorOpen, WOOD},
 	.StairsDown     = {.StairsDown, STAIRS},

@@ -39,8 +39,11 @@ init :: proc() {
 	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data[:]), c.int(len(atlas_data)))
 	_atlas_texture = rl.LoadTextureFromImage(atlas_img)
 	rl.UnloadImage(atlas_img)
-	_cur_map = arena(11, 13)
-	_hero_loc = {1, 1}
+	//recurse_bones := wf_recursive(11, 13)
+	//defer grid_destroy(&recurse_bones)
+	//_cur_map = wf_post_process(recurse_bones) 
+	_cur_map = map_make_roomer(40, 30, 5, 9, 10000)
+	_hero_loc = map_random_floor(_cur_map)
 	_hero_screen_pos = loc_to_screen(_hero_loc)
 }
 
