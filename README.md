@@ -109,3 +109,9 @@ I am going to stick with what I know for the map, using the system I detailed ab
 I have begun refactoring things to separate files as well. 
 
 Basic map drawing is in. Still haven't decided if I want to support scrolling maps yet.
+
+## Week 3 (2025-07-29) Field of View, basic enemies
+
+I'm still stuck on Week 2 because of tileset issues. I've been experimenting with map generation methods and with all of them, I'm feeling like the tileset is missing a couple of crucial tiles. I also don't like how the vertical walls have so much space, which looks strange when I have the player stop at walls.
+
+I am strongly considering changing tilesets and have been looking at others. I might be able to make this tileset work with some extra code to possibly flip tiles. I either need a single-block solid wall tile or three more tiles: 4-way intersection (&#x253C;), and two T-insersections (&#x2534; &#x252C;)
