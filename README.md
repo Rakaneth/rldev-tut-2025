@@ -114,4 +114,27 @@ Basic map drawing is in. Still haven't decided if I want to support scrolling ma
 
 I'm still stuck on Week 2 because of tileset issues. I've been experimenting with map generation methods and with all of them, I'm feeling like the tileset is missing a couple of crucial tiles. I also don't like how the vertical walls have so much space, which looks strange when I have the player stop at walls.
 
-I am strongly considering changing tilesets and have been looking at others. I might be able to make this tileset work with some extra code to possibly flip tiles. I either need a single-block solid wall tile or three more tiles: 4-way intersection (&#x253C;), and two T-insersections (&#x2534; &#x252C;)
+I am strongly considering changing tilesets and have been looking at others. I might be able to make this tileset work with some extra code to flip tiles. I either need a single-block solid wall tile or three more tiles: 4-way intersection (&#x253C;), and two T-insersections (&#x2534; &#x252C;)
+
+### Entities
+
+In the meantime, I am also considering my entity system. It is a classic choice to use some kind of ECS, but those are not trivial to implement in lower-level languages. I will have an `Entity` struct containing common components like `position`, `tile`, `name`, etc. and have a union which contains the data that will be different. It might look something like this:
+
+```odin
+Entity :: struct {
+    name: string,
+    desc: string,
+    pos: Point,
+    tile: Tile,
+    color: rl.Color,
+    type: union {
+        Mobile,
+        Armor,
+        Weapon,
+        Trinket,
+        Consumable,
+    }
+}
+```
+
+I will hold these entities in some kind of data store (probably a map) and access them using some kind of handle system. 
