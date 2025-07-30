@@ -46,10 +46,10 @@ init :: proc() {
 	rl.UnloadImage(atlas_img)
 	first_floor := map_make_recursive(39, 29, 2)
 	_cur_map = gamemap_create(first_floor)
-	spawn_mobile(.Hero, true)
-	spawn_mobile(.Bat)
-	spawn_consumable(.Potion_Healing)
-	spawn_consumable(.Scroll_Lightning)
+	spawn(Mobile_ID.Hero, true)
+	spawn(Mobile_ID.Bat)
+	spawn(Consumable_ID.Potion_Healing)
+	spawn(Consumable_ID.Scroll_Lightning)
 
 	//_cur_map = map_make_recursive(39, 29)
 	//_cur_map = map_make_roomer(39, 29, 5, 7)
@@ -108,6 +108,11 @@ shutdown :: proc() {
 	delete(_entity_store)
 	rl.UnloadTexture(_atlas_texture)
 	rl.CloseWindow()
+}
+
+spawn :: proc {
+	spawn_mobile,
+	spawn_consumable,
 }
 
 spawn_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> ObjId {
