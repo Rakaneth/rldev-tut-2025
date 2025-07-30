@@ -1,0 +1,59 @@
+{
+	"files": [
+		{
+			"path": "src/main.odin",
+			"bookmarks": [
+				{
+					"line": 7,
+					"column": 20,
+					"label": ""
+				},
+				{
+					"line": 25,
+					"column": 18,
+					"label": ""
+				},
+				{
+					"line": 37,
+					"column": 20,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/gamemap.odin",
+			"bookmarks": [
+				{
+					"line": 6,
+					"column": 17,
+					"label": ""
+				},
+				{
+					"line": 31,
+					"column": 16,
+					"label": ""
+				},
+				{
+					"line": 63,
+					"column": 20,
+					"label": ""
+				},
+				{
+					"line": 119,
+					"column": 28,
+					"label": ""
+				},
+				{
+					"line": 194,
+					"column": 18,
+					"label": ""
+				},
+				{
+					"line": 291,
+					"column": 28,
+					"label": ""
+				}
+			]
+		}
+	]
+}
