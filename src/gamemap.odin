@@ -116,6 +116,8 @@ grid_fill :: proc(grid: ^$T/Grid($Val), val: Val) {
 	}
 }
 
+
+/* map-specific functions */
 Terrain :: enum {
 	NullTile,
 	Wall,
@@ -124,8 +126,9 @@ Terrain :: enum {
 	StairsDown,
 }
 
-/* map-specific functions */
 TerrainData :: Grid(Terrain)
+
+WALKABLE: bit_set[Terrain] : {.Floor, .StairsDown}
 
 map_debug_print :: proc(m: TerrainData) {
 	to_print: rune
@@ -182,6 +185,11 @@ map_random_floor :: proc(m: TerrainData) -> Point {
 	}
 
 	return result
+}
+
+
+map_can_walk :: proc(m: TerrainData, pos: Point) -> bool {
+	return grid_get(m, pos) in WALKABLE
 }
 
 /* Map Creation */
@@ -279,4 +287,32 @@ map_make_roomer :: proc(
 	}
 
 	return m
+}
+
+/* Full GameMap structure */
+
+GameMap :: struct {
+	using terrain: TerrainData,
+	entities:      [dynamic]ObjId,
+}
+
+gamemap_create :: proc(
+	m: TerrainData,
+	allocator := context.allocator,
+	loc := #caller_location,
+) -> GameMap {
+	return {terrain = m, entities = make([dynamic]ObjId, allocator, loc)}
+}
+
+gamemap_destroy :: proc(gm: ^GameMap) {
+	grid_destroy(&gm.terrain)
+	delete(gm.entities)
+}
+
+gamemap_add_entity :: proc(gm: ^GameMap, e: Entity) {
+	append(&gm.entities, e.id)
+}
+
+gamemap_remove_entity :: proc(gm: ^GameMap, e: Entity) {
+	unordered_remove(&gm.entities, e.id)
 }

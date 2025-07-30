@@ -1,5 +1,6 @@
 package main
 
+import "core:slice"
 import rl "vendor:raylib"
 
 /* swatch */
@@ -30,13 +31,16 @@ Atlas_Tile :: enum {
 	Door,
 	Stairs,
 	WallBlock,
+	Bat,
+	Potion,
+	Scroll,
 }
 
 @(rodata)
 TextureAtlas := [Atlas_Tile]rl.Rectangle {
 	.NullTile       = {0, 0, TILE_SIZE, TILE_SIZE},
 	.Hero           = {96, 0, TILE_SIZE, TILE_SIZE},
-	.Door           = {80, 16, TILE_SIZE, TILE_SIZE},
+	.Door           = {80, 32, TILE_SIZE, TILE_SIZE},
 	.Stairs         = {80, 16, TILE_SIZE, TILE_SIZE},
 	.WallHorz       = {0, 16, TILE_SIZE, TILE_SIZE},
 	.WallVert       = {16, 0, TILE_SIZE, TILE_SIZE},
@@ -55,6 +59,9 @@ TextureAtlas := [Atlas_Tile]rl.Rectangle {
 	.WallUpperLeft  = {144, 0, TILE_SIZE, TILE_SIZE},
 	.WallUpperRight = {160, 0, TILE_SIZE, TILE_SIZE},
 	.Floor          = {0, 32, TILE_SIZE, TILE_SIZE},
+	.Bat            = {16, 48, TILE_SIZE, TILE_SIZE},
+	.Potion         = {144, 32, TILE_SIZE, TILE_SIZE},
+	.Scroll         = {176, 32, TILE_SIZE, TILE_SIZE},
 }
 
 draw_tile :: proc(tile: Atlas_Tile, x: f32, y: f32, tint: rl.Color) {
@@ -93,7 +100,8 @@ draw_map :: proc(m: TerrainData) {
 	for y in 0 ..< m.height {
 		for x in 0 ..< m.width {
 			pos := Point{x, y}
-			if grid_get(m, pos) == Terrain.Wall {
+			t := grid_get(m, pos)
+			if t == Terrain.Wall {
 				switch wall_score(m, pos) {
 				case 0:
 					to_draw = .WallBlock
@@ -155,9 +163,36 @@ draw_map :: proc(m: TerrainData) {
 					}
 				}
 			} else {
-				to_draw = .Floor
+				#partial switch t {
+				case .Floor:
+					to_draw = .Floor
+				case .StairsDown:
+					to_draw = .Stairs
+				case .Door:
+					to_draw = .Door
+				case .NullTile:
+					to_draw = .NullTile
+				}
 			}
 			draw_cell(to_draw, pos, rl.WHITE)
 		}
 	}
+}
+
+draw_entities :: proc(gm: GameMap) {
+	z_cmp :: proc(a, b: ObjId) -> bool {
+		a_e := entity_get(a)
+		b_e := entity_get(b)
+		return a_e.z < b_e.z
+	}
+
+	slice.sort_by(gm.entities[:], z_cmp)
+	for e_id in gm.entities {
+		e := entity_get(e_id)
+		draw_cell(e.tile, e.pos, e.color)
+	}
+}
+
+draw_stats :: proc() {
+
 }
