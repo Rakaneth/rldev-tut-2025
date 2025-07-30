@@ -10,62 +10,51 @@ WOOD: rl.Color : {192, 101, 96, 255}
 
 Atlas_Tile :: enum {
 	Hero,
-	WallUpperLeft,
-	WallUpperRight,
-	WallLowerLeft,
-	WallLowerRight,
+	Floor,
 	WallHorz,
-	WallVertLeft,
-	WallVertRight,
+	WallVert,
 	WallTLeft,
 	WallTRight,
-	EmptySpace,
+	WallTUp,
+	WallTDown,
+	WallCross,
+	WallUpEnd,
+	WallDownEnd,
+	WallLeftEnd,
+	WallRightEnd,
+	WallLowerLeft,
+	WallLowerRight,
+	WallUpperLeft,
+	WallUpperRight,
 	NullTile,
-	DoorClosed,
-	DoorOpen,
-	StairsDown,
+	Door,
+	Stairs,
+	WallBlock,
 }
 
 @(rodata)
 TextureAtlas := [Atlas_Tile]rl.Rectangle {
-	.Hero           = {32, 0, TILE_SIZE, TILE_SIZE},
-	.WallUpperLeft  = {0, 0, TILE_SIZE, TILE_SIZE},
-	.WallUpperRight = {24, 0, TILE_SIZE, TILE_SIZE},
-	.WallLowerLeft  = {0, 16, TILE_SIZE, TILE_SIZE},
-	.WallLowerRight = {24, 16, TILE_SIZE, TILE_SIZE},
-	.EmptySpace     = {8, 8, TILE_SIZE, TILE_SIZE},
-	.NullTile       = {16, 8, TILE_SIZE, TILE_SIZE},
-	.DoorClosed     = {32, 16, TILE_SIZE, TILE_SIZE},
-	.DoorOpen       = {40, 16, TILE_SIZE, TILE_SIZE},
-	.StairsDown     = {32, 24, TILE_SIZE, TILE_SIZE},
-	.WallHorz       = {8, 0, TILE_SIZE, TILE_SIZE},
-	.WallVertLeft   = {0, 8, TILE_SIZE, TILE_SIZE},
-	.WallVertRight  = {24, 8, TILE_SIZE, TILE_SIZE},
-	.WallTLeft      = {0, 40, TILE_SIZE, TILE_SIZE},
-	.WallTRight     = {8, 40, TILE_SIZE, TILE_SIZE},
-}
-
-TileRender :: struct {
-	tile:  Atlas_Tile,
-	color: rl.Color,
-}
-
-@(rodata)
-TerrainToAtlas := [Terrain]TileRender {
-	.NullTile       = {.NullTile, rl.RED},
-	.WallUpperLeft  = {.WallUpperLeft, STONE_LIGHT},
-	.WallUpperRight = {.WallUpperRight, STONE_LIGHT},
-	.WallLowerLeft  = {.WallLowerLeft, STONE_LIGHT},
-	.WallLowerRight = {.WallLowerRight, STONE_LIGHT},
-	.WallHorz       = {.WallHorz, STONE_LIGHT},
-	.WallVertLeft   = {.WallVertLeft, STONE_LIGHT},
-	.WallVertRight  = {.WallVertRight, STONE_LIGHT},
-	.WallTLeft      = {.WallTLeft, STONE_LIGHT},
-	.WallTRight     = {.WallTRight, STONE_LIGHT},
-	.DoorClosed     = {.DoorClosed, WOOD},
-	.DoorOpen       = {.DoorOpen, WOOD},
-	.StairsDown     = {.StairsDown, STAIRS},
-	.Floor          = {.EmptySpace, STONE_LIGHT},
+	.NullTile       = {0, 0, TILE_SIZE, TILE_SIZE},
+	.Hero           = {96, 0, TILE_SIZE, TILE_SIZE},
+	.Door           = {80, 16, TILE_SIZE, TILE_SIZE},
+	.Stairs         = {80, 16, TILE_SIZE, TILE_SIZE},
+	.WallHorz       = {0, 16, TILE_SIZE, TILE_SIZE},
+	.WallVert       = {16, 0, TILE_SIZE, TILE_SIZE},
+	.WallTRight     = {32, 0, TILE_SIZE, TILE_SIZE},
+	.WallTLeft      = {64, 32, TILE_SIZE, TILE_SIZE},
+	.WallTUp        = {32, 32, TILE_SIZE, TILE_SIZE},
+	.WallTDown      = {64, 0, TILE_SIZE, TILE_SIZE},
+	.WallCross      = {48, 16, TILE_SIZE, TILE_SIZE},
+	.WallBlock      = {16, 16, TILE_SIZE, TILE_SIZE},
+	.WallUpEnd      = {48, 0, TILE_SIZE, TILE_SIZE},
+	.WallLeftEnd    = {32, 16, TILE_SIZE, TILE_SIZE},
+	.WallRightEnd   = {64, 16, TILE_SIZE, TILE_SIZE},
+	.WallDownEnd    = {48, 32, TILE_SIZE, TILE_SIZE},
+	.WallLowerLeft  = {112, 0, TILE_SIZE, TILE_SIZE},
+	.WallLowerRight = {128, 0, TILE_SIZE, TILE_SIZE},
+	.WallUpperLeft  = {144, 0, TILE_SIZE, TILE_SIZE},
+	.WallUpperRight = {160, 0, TILE_SIZE, TILE_SIZE},
+	.Floor          = {0, 32, TILE_SIZE, TILE_SIZE},
 }
 
 draw_tile :: proc(tile: Atlas_Tile, x: f32, y: f32, tint: rl.Color) {
@@ -75,7 +64,7 @@ draw_tile :: proc(tile: Atlas_Tile, x: f32, y: f32, tint: rl.Color) {
 }
 
 loc_to_screen :: proc(p: Point) -> [2]f32 {
-	return {f32(p.x), f32(p.y)} * 8
+	return {f32(p.x), f32(p.y)} * TILE_SIZE
 }
 
 draw_cell :: proc(tile: Atlas_Tile, world_pos: Point, tint: rl.Color) {
@@ -84,12 +73,91 @@ draw_cell :: proc(tile: Atlas_Tile, world_pos: Point, tint: rl.Color) {
 }
 
 draw_map :: proc(m: TerrainData) {
-	to_draw: TileRender
+	to_draw: Atlas_Tile
+
+	wall_score :: proc(i_m: TerrainData, i_pos: Point) -> int {
+		result := 0
+		up := point_by_dir(i_pos, .Up)
+		right := point_by_dir(i_pos, .Right)
+		down := point_by_dir(i_pos, .Down)
+		left := point_by_dir(i_pos, .Left)
+
+		if map_is_wall(i_m, up) do result += 1
+		if map_is_wall(i_m, right) do result += 2
+		if map_is_wall(i_m, down) do result += 4
+		if map_is_wall(i_m, left) do result += 8
+
+		return result
+	}
+
 	for y in 0 ..< m.height {
 		for x in 0 ..< m.width {
 			pos := Point{x, y}
-			to_draw = TerrainToAtlas[grid_get(m, pos)]
-			draw_cell(to_draw.tile, pos, to_draw.color)
+			if grid_get(m, pos) == Terrain.Wall {
+				switch wall_score(m, pos) {
+				case 0:
+					to_draw = .WallBlock
+				case 1:
+					to_draw = .WallDownEnd
+				case 2:
+					to_draw = .WallLeftEnd
+				case 3:
+					to_draw = .WallLowerLeft
+				case 4:
+					to_draw = .WallUpEnd
+				case 5:
+					to_draw = .WallVert
+				case 6:
+					to_draw = .WallUpperLeft
+				case 7:
+					to_draw = .WallTRight
+				case 8:
+					to_draw = .WallRightEnd
+				case 9:
+					to_draw = .WallLowerRight
+				case 10:
+					to_draw = .WallHorz
+				case 11:
+					to_draw = .WallTUp
+				case 12:
+					to_draw = .WallUpperRight
+				case 13:
+					to_draw = .WallTLeft
+				case 14:
+					to_draw = .WallTDown
+				case 15:
+					ne := Point{1, -1}
+					se := Point{1, 1}
+					sw := Point{-1, 1}
+					nw := Point{-1, -1}
+
+					t_ne := grid_get(m, pos + ne)
+					t_se := grid_get(m, pos + se)
+					t_nw := grid_get(m, pos + nw)
+					t_sw := grid_get(m, pos + sw)
+
+					switch {
+					case t_ne == Terrain.Floor &&
+					     t_se == Terrain.Floor &&
+					     t_nw == Terrain.Floor &&
+					     t_sw == Terrain.Floor:
+						to_draw = .WallCross
+					case t_ne == Terrain.Floor:
+						to_draw = .WallLowerLeft
+					case t_se == Terrain.Floor:
+						to_draw = .WallUpperLeft
+					case t_nw == Terrain.Floor:
+						to_draw = .WallLowerRight
+					case t_sw == Terrain.Floor:
+						to_draw = .WallUpperRight
+					case:
+						to_draw = .NullTile
+					}
+				}
+			} else {
+				to_draw = .Floor
+			}
+			draw_cell(to_draw, pos, rl.WHITE)
 		}
 	}
 }

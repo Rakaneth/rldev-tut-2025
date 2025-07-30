@@ -8,9 +8,9 @@ import rl "vendor:raylib"
 SCR_W :: 1200
 SCR_H :: 900
 TITLE :: "RoguelikeDev RL Tutorial 2025"
-WORLD_PIX_W :: 320
-WORLD_PIX_H :: 240
-TILE_SIZE :: 8
+WORLD_PIX_W :: 640
+WORLD_PIX_H :: 480
+TILE_SIZE :: 16
 WORLD_TILE_W :: WORLD_PIX_W / TILE_SIZE
 WORLD_TILE_H :: WORLD_PIX_H / TILE_SIZE
 FPS :: 60
@@ -35,14 +35,12 @@ _cur_map: TerrainData
 init :: proc() {
 	rl.InitWindow(SCR_W, SCR_H, TITLE)
 	rl.SetTargetFPS(FPS)
-	atlas_data := #load("../assets/gfx/monochrome_tilemap_packed.png")
+	atlas_data := #load("../assets/gfx/lovable-rogue-cut.png")
 	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data[:]), c.int(len(atlas_data)))
 	_atlas_texture = rl.LoadTextureFromImage(atlas_img)
 	rl.UnloadImage(atlas_img)
-	//recurse_bones := wf_recursive(11, 13)
-	//defer grid_destroy(&recurse_bones)
-	//_cur_map = wf_post_process(recurse_bones) 
-	_cur_map = map_make_roomer(40, 30, 5, 9, 10000)
+	_cur_map = map_make_recursive(39, 29)
+	//_cur_map = map_make_roomer(39, 29, 5, 7)
 	_hero_loc = map_random_floor(_cur_map)
 	_hero_screen_pos = loc_to_screen(_hero_loc)
 }

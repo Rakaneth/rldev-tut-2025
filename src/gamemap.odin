@@ -118,42 +118,32 @@ grid_fill :: proc(grid: ^$T/Grid($Val), val: Val) {
 
 Terrain :: enum {
 	NullTile,
-	WallUpperLeft,
-	WallUpperRight,
-	WallLowerLeft,
-	WallLowerRight,
-	WallHorz,
-	WallVertLeft,
-	WallVertRight,
-	WallTLeft,
-	WallTRight,
+	Wall,
 	Floor,
-	DoorClosed,
-	DoorOpen,
+	Door,
 	StairsDown,
 }
 
-WALL_SET: bit_set[Terrain] : {
-	.WallUpperLeft,
-	.WallUpperRight,
-	.WallHorz,
-	.WallLowerLeft,
-	.WallLowerRight,
-	.WallVertLeft,
-	.WallVertRight,
-	.WallTLeft,
-	.WallTRight,
-}
-
-
 /* map-specific functions */
 TerrainData :: Grid(Terrain)
-WallFloor :: Grid(bool)
 
-wf_debug_print :: proc(m: WallFloor) {
+map_debug_print :: proc(m: TerrainData) {
+	to_print: rune
 	for y in 0 ..< m.height {
 		for x in 0 ..< m.width {
-			to_print := grid_get(m, {x, y}) ? "." : "#"
+			t := grid_get(m, {x, y})
+			switch t {
+			case .Wall:
+				to_print = '#'
+			case .Floor:
+				to_print = '.'
+			case .Door:
+				to_print = '+'
+			case .StairsDown:
+				to_print = '>'
+			case .NullTile:
+				to_print = 'X'
+			}
 			fmt.print(to_print)
 		}
 		fmt.println("")
@@ -161,29 +151,21 @@ wf_debug_print :: proc(m: WallFloor) {
 }
 
 map_is_wall :: proc(m: TerrainData, pos: Point) -> bool {
-	return grid_get(m, pos) in WALL_SET
+	return grid_get(m, pos) == Terrain.Wall
+}
+
+map_is_wall_or_null :: proc(m: TerrainData, pos: Point) -> bool {
+	t := grid_get(m, pos)
+	return t == Terrain.Wall || t == Terrain.NullTile
 }
 
 map_carve_rect :: proc(m: ^TerrainData, r: Rect) {
 	t: Terrain
 	for y in r.y1 ..= r.y2 {
 		for x in r.x1 ..= r.x2 {
-			switch {
-			case x == r.x1 && y == r.y1:
-				t = .WallUpperLeft
-			case x == r.x1 && y == r.y2:
-				t = .WallLowerLeft
-			case x == r.x2 && y == r.y1:
-				t = .WallUpperRight
-			case x == r.x2 && y == r.y2:
-				t = .WallLowerRight
-			case y == r.y1 || y == r.y2:
-				t = .WallHorz
-			case x == r.x1:
-				t = .WallVertLeft
-			case x == r.x2:
-				t = .WallVertRight
-			case:
+			if x == r.x1 || x == r.x2 || y == r.y1 || y == r.y2 {
+				t = .Wall
+			} else {
 				t = .Floor
 			}
 			grid_set(m, {x, y}, t)
@@ -205,54 +187,37 @@ map_random_floor :: proc(m: TerrainData) -> Point {
 /* Map Creation */
 map_make_arena :: proc(width, height: int) -> TerrainData {
 	m := grid_create(width, height, Terrain)
-	to_set: Terrain
-	x_edge := m.width - 1
-	y_edge := m.height - 1
-	for y in 0 ..< m.height {
-		for x in 0 ..< m.width {
-			switch {
-			case x == 0 && y == 0:
-				to_set = .WallUpperLeft
-			case x == x_edge && y == 0:
-				to_set = .WallUpperRight
-			case x == 0 && y == y_edge:
-				to_set = .WallLowerLeft
-			case x == x_edge && y == y_edge:
-				to_set = .WallLowerRight
-			case x == 0:
-				to_set = .WallVertLeft
-			case x == x_edge:
-				to_set = .WallVertRight
-			case y == 0 || y == y_edge:
-				to_set = .WallHorz
-			case:
-				to_set = .Floor
-			}
-			grid_set(&m, {x, y}, to_set)
-		}
-	}
+	map_carve_rect(&m, {0, 0, m.width, m.height})
 	return m
 }
 
-wf_recursive :: proc(width, height: int, rand_factor: int = 0) -> WallFloor {
+map_make_recursive :: proc(width, height: int, rand_factor: int = 0) -> TerrainData {
 	assert(width & 1 == 1 && height & 1 == 1)
 	q: queue.Queue(Point)
 	queue.init(&q)
 	defer queue.destroy(&q)
-	m := grid_create(width, height, bool)
+	m := grid_create(width, height, Terrain)
+	grid_fill(&m, Terrain.Wall)
 	cur: Point = {
 		1 + 2 * (rand_next_int(1, width - 1) / 2),
 		1 + 2 * (rand_next_int(1, height - 1) / 2),
 	}
-	grid_set(&m, cur, true)
+	grid_set(&m, cur, Terrain.Floor)
 	queue.push_back(&q, cur)
 	next: Point
 	blocked := false
 	dirs: [4]Direction = {.Down, .Left, .Right, .Up}
 	rand.shuffle(dirs[:])
 
-	can_use :: proc(wf: WallFloor, pos: Point) -> bool {
-		return grid_in_bounds(wf, pos) && !grid_get(wf, pos) && pos.x >= 1 && pos.y >= 1
+	can_use :: proc(i_m: TerrainData, pos: Point) -> bool {
+		return(
+			grid_in_bounds(i_m, pos) &&
+			grid_get(i_m, pos) == Terrain.Wall &&
+			pos.x >= 1 &&
+			pos.y >= 1 &&
+			pos.x < i_m.width - 1 &&
+			pos.y < i_m.width - 2 \
+		)
 	}
 
 	for queue.len(q) > 0 {
@@ -267,85 +232,13 @@ wf_recursive :: proc(width, height: int, rand_factor: int = 0) -> WallFloor {
 				if can_use(m, next) {
 					blocked = false
 					between := point_by_dir(cur, next_dir)
-					grid_set(&m, next, true)
-					grid_set(&m, between, true)
+					grid_set(&m, next, Terrain.Floor)
+					grid_set(&m, between, Terrain.Floor)
 					queue.push_back(&q, next)
 					cur = next
 					break
 				}
 			}
-		}
-	}
-
-	return m
-}
-
-wf_post_process :: proc(wf: WallFloor) -> TerrainData {
-	m := grid_create(wf.width, wf.height, Terrain)
-
-	when ODIN_DEBUG {
-		wf_debug_print(wf)
-	}
-
-	wall_score :: proc(w_f: WallFloor, pos: Point) -> int {
-		result := 0
-		up := point_by_dir(pos, .Up)
-		right := point_by_dir(pos, .Right)
-		down := point_by_dir(pos, .Down)
-		left := point_by_dir(pos, .Left)
-
-		if grid_in_bounds(w_f, up) && !grid_get(w_f, up) do result += 1
-		if grid_in_bounds(w_f, right) && !grid_get(w_f, right) do result += 2
-		if grid_in_bounds(w_f, down) && !grid_get(w_f, down) do result += 4
-		if grid_in_bounds(w_f, left) && !grid_get(w_f, left) do result += 8
-
-		return result
-	}
-
-	t: Terrain
-
-	for y in 0 ..< wf.height {
-		for x in 0 ..< wf.width {
-			if grid_get(wf, {x, y}) {
-				grid_set(&m, {x, y}, Terrain.Floor)
-				continue
-			}
-
-			ws := wall_score(wf, {x, y})
-			n: Terrain
-			switch ws {
-			case 0, 15:
-				/* no T piece or full block in tileset */
-				t = .NullTile
-			case 1, 4, 5, 11:
-				n = grid_get(m, {x, y - 1})
-				if n == Terrain.WallUpperLeft ||
-				   n == Terrain.WallVertLeft ||
-				   n == Terrain.WallTLeft {
-					t = .WallVertLeft
-				} else if n == Terrain.WallUpperRight ||
-				   n == Terrain.WallVertRight ||
-				   n == Terrain.WallTRight {
-					t = .WallVertRight
-				}
-			case 2, 8, 10:
-				t = .WallHorz
-			case 3:
-				t = .WallLowerLeft
-			case 6:
-				t = .WallUpperLeft
-			case 7:
-				t = .WallTLeft
-			case 9:
-				t = .WallLowerRight
-			case 12:
-				t = .WallUpperRight
-			case 13:
-				t = .WallTRight
-			case 14:
-				t = .WallUpperRight /* maybe the hard corner? */
-			}
-			grid_set(&m, {x, y}, t)
 		}
 	}
 
