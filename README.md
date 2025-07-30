@@ -146,3 +146,5 @@ I will hold these entities in some kind of data store (probably a map) and acces
 I have decided to swap to a different tileset (see changes above). This work is in a separate branch `week2-new-sheet` in case I decide to go back to the original tileset I was using.
 
 After refactoring all of my map generation code to use only one wall marker and change which tile displays depending on the surrounding walls (this took a few iterations to get right), I finally have maps that at least look coherent:
+
+![Recursive Maze](/assets/screenshots/recursive-maze.png)
