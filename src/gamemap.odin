@@ -310,6 +310,10 @@ gamemap_destroy :: proc(gm: ^GameMap) {
 }
 
 gamemap_add_entity :: proc(gm: ^GameMap, e: Entity) {
+	if maybe_mob, ok := entity_get_comp_mut(e.id, Mobile); ok {
+		grid_destroy(&maybe_mob.visible)
+		maybe_mob.visible = grid_create(gm.width, gm.height, bool)
+	}
 	append(&gm.entities, e.id)
 }
 

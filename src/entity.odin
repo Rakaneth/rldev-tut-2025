@@ -9,9 +9,11 @@ PLAYER_ID :: 0
 _entity_store: map[ObjId]Entity
 
 Mobile :: struct {
-	energy: int,
-	cur_hp: int,
-	max_hp: int,
+	energy:  int,
+	cur_hp:  int,
+	max_hp:  int,
+	visible: Grid(bool),
+	vision:  int,
 }
 
 Consumable :: struct {
@@ -69,6 +71,10 @@ entity_create :: proc(
 entity_destroy :: proc(e: ^Entity, allocator := context.allocator) {
 	delete(e.name, allocator)
 	delete(e.desc, allocator)
+	#partial switch &variant in e.etype {
+	case Mobile:
+		grid_destroy(&variant.visible)
+	}
 }
 
 entity_get :: proc(id: ObjId) -> Entity {
@@ -94,7 +100,7 @@ entity_get_comp_mut :: proc(id: ObjId, $Type: typeid) -> (EntityInstMut(Type), b
 		return {maybe_e, comp}, true
 	}
 
-	return nil, false
+	return {}, false
 }
 
 entity_add :: proc(e: Entity) {
@@ -112,4 +118,20 @@ entity_move_by :: proc(e_id: ObjId, dir: Direction) {
 	if map_can_walk(_cur_map, new_pos) {
 		e.pos = new_pos
 	}
+}
+
+mobile_update_fov :: proc(e_id: ObjId) {
+	mob := entity_get_comp_mut(e_id, Mobile)
+	grid_fill(&mob.visible, false)
+
+	for y in -mob.vision ..= mob.vision {
+		for x in -mob.vision ..= mob.vision {
+			grid_set(&mob.visible, mob.pos + {x, y}, true)
+		}
+	}
+}
+
+is_visible_to_player :: proc(pos: Point) -> bool {
+	mob := entity_get_comp(PLAYER_ID, Mobile)
+	return grid_get(mob.visible, pos)
 }

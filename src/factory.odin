@@ -15,6 +15,7 @@ BP_Base :: struct {
 BP_Mobile :: struct {
 	hp:         int,
 	using base: BP_Base,
+	vision:     int,
 }
 
 BP_Consumable :: struct {
@@ -34,8 +35,22 @@ Consumable_ID :: enum {
 
 @(rodata)
 MOBILES := [Mobile_ID]BP_Mobile {
-	.Hero = {name = "Hero", desc = "The Hero!", tile = .Hero, color = rl.WHITE, hp = 30},
-	.Bat = {name = "Bat", desc = "A squeaky Bat", tile = .Bat, color = rl.WHITE, hp = 10},
+	.Hero = {
+		name = "Hero",
+		desc = "The Hero!",
+		tile = .Hero,
+		color = rl.WHITE,
+		hp = 30,
+		vision = 6,
+	},
+	.Bat = {
+		name = "Bat",
+		desc = "A squeaky Bat",
+		tile = .Bat,
+		color = rl.WHITE,
+		hp = 10,
+		vision = 4,
+	},
 }
 
 @(rodata)
@@ -75,7 +90,7 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 		template.name,
 		template.desc,
 		template.tile,
-		Mobile{energy = 100, cur_hp = template.hp, max_hp = template.hp},
+		Mobile{energy = 100, cur_hp = template.hp, max_hp = template.hp, vision = template.vision},
 		template.color,
 		z,
 	)

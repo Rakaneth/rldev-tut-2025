@@ -74,6 +74,8 @@ update :: proc() -> bool {
 		case rl.IsKeyPressed(.D):
 			entity_move_by(PLAYER_ID, .Right)
 		}
+		mobile_update_fov(PLAYER_ID)
+
 	case .Move:
 	// _hero_screen_pos.x = rl.Lerp(_hero_screen_pos.x, _hero_screen_to.x, LERP_MOVE_FACTOR)
 	// _hero_screen_pos.y = rl.Lerp(_hero_screen_pos.y, _hero_screen_to.y, LERP_MOVE_FACTOR)

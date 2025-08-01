@@ -174,7 +174,9 @@ draw_map :: proc(m: TerrainData) {
 					to_draw = .NullTile
 				}
 			}
-			draw_cell(to_draw, pos, rl.WHITE)
+			if is_visible_to_player(pos) {
+				draw_cell(to_draw, pos, rl.WHITE)
+			}
 		}
 	}
 }
@@ -189,7 +191,9 @@ draw_entities :: proc(gm: GameMap) {
 	slice.sort_by(gm.entities[:], z_cmp)
 	for e_id in gm.entities {
 		e := entity_get(e_id)
-		draw_cell(e.tile, e.pos, e.color)
+		if is_visible_to_player(e.pos) {
+			draw_cell(e.tile, e.pos, e.color)
+		}
 	}
 }
 
