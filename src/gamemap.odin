@@ -334,3 +334,25 @@ gamemap_explore :: proc(gm: ^GameMap, pos: Point) {
 gamemap_is_explored :: proc(gm: GameMap, pos: Point) -> bool {
 	return grid_get(gm.explored, pos)
 }
+
+gamemap_get_mob_at :: proc(gm: GameMap, pos: Point) -> (EntityInst(Mobile), bool) {
+	for e_id in gm.entities {
+		maybe_mob, ok := entity_get_comp(e_id, Mobile)
+		if ok && maybe_mob.pos == pos {
+			return maybe_mob, true
+		}
+	}
+
+	return {}, false
+}
+
+gamemap_get_mob_at_mut :: proc(gm: GameMap, pos: Point) -> (EntityInstMut(Mobile), bool) {
+	for e_id in gm.entities {
+		maybe_mob, ok := entity_get_comp_mut(e_id, Mobile)
+		if ok && maybe_mob.pos == pos {
+			return maybe_mob, true
+		}
+	}
+
+	return {}, false
+}

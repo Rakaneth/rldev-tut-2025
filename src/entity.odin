@@ -116,8 +116,11 @@ entity_remove :: proc(e: ^Entity, allocator := context.allocator) {
 entity_move_by :: proc(e_id: ObjId, dir: Direction) {
 	e := entity_get_mut(e_id)
 	new_pos := point_by_dir(e.pos, dir)
-	if map_can_walk(_cur_map, new_pos) {
+	_, mob_ok := gamemap_get_mob_at(_cur_map, new_pos)
+	if map_can_walk(_cur_map, new_pos) && !mob_ok {
 		e.pos = new_pos
+	} else if mob_ok {
+		rl.PlaySound(_swing_sound)
 	}
 }
 

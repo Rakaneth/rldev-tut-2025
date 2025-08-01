@@ -34,27 +34,36 @@ _hero_loc: Point
 // _hero_screen_to: [2]f32
 _state: GameState
 _cur_map: GameMap
+_swing_sound: rl.Sound
 
 /* Game Lifecycle */
 
 init :: proc() {
 	rl.InitWindow(SCR_W, SCR_H, TITLE)
 	rl.SetTargetFPS(FPS)
+	rl.InitAudioDevice()
+
 	atlas_data := #load("../assets/gfx/lovable-rogue-cut.png")
 	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data[:]), c.int(len(atlas_data)))
 	_atlas_texture = rl.LoadTextureFromImage(atlas_img)
+
+	swing_sound_data := #load("../assets/sfx/swing.wav")
+	swing_sound_wav := rl.LoadWaveFromMemory(
+		".wav",
+		raw_data(swing_sound_data[:]),
+		c.int(len(swing_sound_data)),
+	)
+	_swing_sound := rl.LoadSoundFromWave(swing_sound_wav)
+
+	rl.UnloadWave(swing_sound_wav)
 	rl.UnloadImage(atlas_img)
+
 	first_floor := map_make_recursive(39, 29, 2)
 	_cur_map = gamemap_create(first_floor)
 	spawn(Mobile_ID.Hero, true)
 	spawn(Mobile_ID.Bat)
 	spawn(Consumable_ID.Potion_Healing)
 	spawn(Consumable_ID.Scroll_Lightning)
-
-	//_cur_map = map_make_recursive(39, 29)
-	//_cur_map = map_make_roomer(39, 29, 5, 7)
-	//_hero_loc = map_random_floor(_cur_map)
-	//_hero_screen_pos = loc_to_screen(_hero_loc)
 }
 
 //Should return false to stop the game
@@ -108,6 +117,8 @@ shutdown :: proc() {
 		entity_destroy(&e)
 	}
 	delete(_entity_store)
+	rl.UnloadSound(_swing_sound)
+	rl.CloseAudioDevice()
 	rl.UnloadTexture(_atlas_texture)
 	rl.CloseWindow()
 }
