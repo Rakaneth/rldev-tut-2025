@@ -176,6 +176,8 @@ draw_map :: proc(m: TerrainData) {
 			}
 			if is_visible_to_player(pos) {
 				draw_cell(to_draw, pos, rl.WHITE)
+			} else if gamemap_is_explored(_cur_map, pos) {
+				draw_cell(to_draw, pos, rl.BLUE)
 			}
 		}
 	}

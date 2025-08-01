@@ -1,5 +1,6 @@
 package main
 
+import "core:math"
 import "core:strings"
 import rl "vendor:raylib"
 
@@ -124,9 +125,18 @@ mobile_update_fov :: proc(e_id: ObjId) {
 	mob := entity_get_comp_mut(e_id, Mobile)
 	grid_fill(&mob.visible, false)
 
-	for y in -mob.vision ..= mob.vision {
-		for x in -mob.vision ..= mob.vision {
-			grid_set(&mob.visible, mob.pos + {x, y}, true)
+	for deg in 0 ..< 360 {
+		fx: f32 = math.cos_f32(f32(deg) * math.RAD_PER_DEG)
+		fy: f32 = math.sin_f32(f32(deg) * math.RAD_PER_DEG)
+		ox := f32(mob.pos.x) + 0.5
+		oy := f32(mob.pos.y) + 0.5
+		for v in 0 ..< mob.vision {
+			map_pos := Point{int(ox), int(oy)}
+			grid_set(&mob.visible, map_pos, true)
+			if e_id == PLAYER_ID do gamemap_explore(&_cur_map, map_pos)
+			if map_is_wall(_cur_map, map_pos) do break
+			ox += fx
+			oy += fy
 		}
 	}
 }

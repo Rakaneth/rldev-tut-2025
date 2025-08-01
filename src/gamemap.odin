@@ -294,6 +294,7 @@ map_make_roomer :: proc(
 GameMap :: struct {
 	using terrain: TerrainData,
 	entities:      [dynamic]ObjId,
+	explored:      Grid(bool),
 }
 
 gamemap_create :: proc(
@@ -301,11 +302,16 @@ gamemap_create :: proc(
 	allocator := context.allocator,
 	loc := #caller_location,
 ) -> GameMap {
-	return {terrain = m, entities = make([dynamic]ObjId, allocator, loc)}
+	return {
+		terrain = m,
+		entities = make([dynamic]ObjId, allocator, loc),
+		explored = grid_create(m.width, m.height, bool),
+	}
 }
 
 gamemap_destroy :: proc(gm: ^GameMap) {
 	grid_destroy(&gm.terrain)
+	grid_destroy(&gm.explored)
 	delete(gm.entities)
 }
 
@@ -319,4 +325,12 @@ gamemap_add_entity :: proc(gm: ^GameMap, e: Entity) {
 
 gamemap_remove_entity :: proc(gm: ^GameMap, e: Entity) {
 	unordered_remove(&gm.entities, e.id)
+}
+
+gamemap_explore :: proc(gm: ^GameMap, pos: Point) {
+	grid_set(&gm.explored, pos, true)
+}
+
+gamemap_is_explored :: proc(gm: GameMap, pos: Point) -> bool {
+	return grid_get(gm.explored, pos)
 }
