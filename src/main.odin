@@ -35,6 +35,7 @@ _hero_loc: Point
 _state: GameState
 _cur_map: GameMap
 _swing_sound: rl.Sound
+_dungeon_music: rl.Music
 
 /* Game Lifecycle */
 
@@ -44,18 +45,27 @@ init :: proc() {
 	rl.InitAudioDevice()
 
 	atlas_data := #load("../assets/gfx/lovable-rogue-cut.png")
-	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data[:]), c.int(len(atlas_data)))
+	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data), c.int(len(atlas_data)))
 	_atlas_texture = rl.LoadTextureFromImage(atlas_img)
 
 	swing_sound_data := #load("../assets/sfx/swing.wav")
 	swing_sound_wav := rl.LoadWaveFromMemory(
 		".wav",
-		raw_data(swing_sound_data[:]),
+		raw_data(swing_sound_data),
 		c.int(len(swing_sound_data)),
 	)
-	_swing_sound := rl.LoadSoundFromWave(swing_sound_wav)
+	_swing_sound = rl.LoadSoundFromWave(swing_sound_wav)
+	// _swing_sound = rl.LoadSound("./swing.wav")
 
-	rl.UnloadWave(swing_sound_wav)
+	dungeon_mus_data := #load("../assets/sfx/dungeon.xm")
+	_dungeon_music = rl.LoadMusicStreamFromMemory(
+		".xm",
+		raw_data(dungeon_mus_data),
+		c.int(len(dungeon_mus_data)),
+	)
+	rl.SetMusicVolume(_dungeon_music, 0.5)
+	// _dungeon_music = rl.LoadMusicStream("./dungeon.xm")
+
 	rl.UnloadImage(atlas_img)
 
 	first_floor := map_make_recursive(39, 29, 2)
@@ -69,6 +79,7 @@ init :: proc() {
 //Should return false to stop the game
 update :: proc() -> bool {
 	dt := rl.GetFrameTime()
+
 	switch _state {
 	case .Input:
 		switch {
@@ -96,6 +107,7 @@ update :: proc() -> bool {
 	// }
 	}
 
+
 	return true
 }
 
@@ -117,6 +129,7 @@ shutdown :: proc() {
 		entity_destroy(&e)
 	}
 	delete(_entity_store)
+	rl.UnloadMusicStream(_dungeon_music)
 	rl.UnloadSound(_swing_sound)
 	rl.CloseAudioDevice()
 	rl.UnloadTexture(_atlas_texture)
@@ -162,9 +175,14 @@ main :: proc() {
 	init()
 	defer shutdown()
 
+	if rl.IsMusicValid(_dungeon_music) && rl.IsMusicReady(_dungeon_music) {
+		rl.PlayMusicStream(_dungeon_music)
+	}
+
 	running := true
 
 	for running {
+		rl.UpdateMusicStream(_dungeon_music)
 		running = update()
 		draw()
 	}
