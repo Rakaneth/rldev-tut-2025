@@ -152,3 +152,11 @@ After refactoring all of my map generation code to use only one wall marker and 
 The entity plumbing is now in. I may return during a later phase to map generation since the perfect mazes produced by the recursive backtracker tend not to make for fun exploration in practice. With the entity plumbing hooked up to the rest of the game (and smooth movement disabled until a possible future polish phase), I am ready to tackle Week 3.
 
 ![Week 2](/assets/screenshots/Week2.gif)
+
+### 2025-08-02
+
+FoV and basic collision detection are in. As a bonus, I even have sound! I have decided to use a basic raycasting algorithm I found on RogueBasin as it's fast enough for the scope of the project. This completes the objective for Week 3.
+
+![Week 3](/assets/screenshots/Week3.mp4)
+
+
