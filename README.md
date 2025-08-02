@@ -157,6 +157,7 @@ The entity plumbing is now in. I may return during a later phase to map generati
 
 FoV and basic collision detection are in. As a bonus, I even have sound! I have decided to use a basic raycasting algorithm I found on RogueBasin as it's fast enough for the scope of the project. This completes the objective for Week 3.
 
-C:\Users\rakan\dev\Odin\rldev-tut-2025\assets\screenshots\Week3.mp4
+
+![Week 3](https://github.com/user-attachments/assets/f08a089e-ccbf-4722-831e-d736157399c4)
 
 
