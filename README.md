@@ -155,7 +155,7 @@ The entity plumbing is now in. I may return during a later phase to map generati
 
 ### 2025-08-02
 
-FoV and basic collision detection are in. As a bonus, I even have sound! I have decided to use a basic raycasting algorithm I found on RogueBasin as it's fast enough for the scope of the project. This completes the objective for Week 3.
+FoV and basic collision detection are in. As a bonus, I even have sound! I have decided to use a basic raycasting algorithm I found on [RogueBasin](https://www.roguebasin.com/index.php/Eligloscode) as it's fast enough for the scope of the project. This completes the objective for Week 3.
 
 
 https://github.com/user-attachments/assets/f08a089e-ccbf-4722-831e-d736157399c4
