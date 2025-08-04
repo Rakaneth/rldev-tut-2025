@@ -15,6 +15,7 @@ Mobile :: struct {
 	max_hp:  int,
 	visible: Grid(bool),
 	vision:  int,
+	damage:  int,
 }
 
 Consumable :: struct {
@@ -116,11 +117,11 @@ entity_remove :: proc(e: ^Entity, allocator := context.allocator) {
 entity_move_by :: proc(e_id: ObjId, dir: Direction) {
 	e := entity_get_mut(e_id)
 	new_pos := point_by_dir(e.pos, dir)
-	_, mob_ok := gamemap_get_mob_at(_cur_map, new_pos)
+	bumped, mob_ok := gamemap_get_mob_at(_cur_map, new_pos)
 	if map_can_walk(_cur_map, new_pos) && !mob_ok {
 		e.pos = new_pos
 	} else if mob_ok {
-		rl.PlaySound(_swing_sound)
+		mob_bump(e_id, bumped.id)
 	}
 }
 
@@ -141,6 +142,19 @@ mobile_update_fov :: proc(e_id: ObjId) {
 			ox += fx
 			oy += fy
 		}
+	}
+}
+
+mob_take_damage :: proc(e_id: ObjId, dmg: int) {
+	mob := entity_get_comp_mut(e_id, Mobile)
+	mob.damage = dmg
+	_state = .Damage
+}
+
+mob_bump :: proc(bumper_id: ObjId, bumped: ObjId) {
+	if bumper_id == PLAYER_ID {
+		rl.PlaySound(_swing_sound)
+		mob_take_damage(bumped, 6)
 	}
 }
 

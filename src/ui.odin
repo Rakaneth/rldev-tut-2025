@@ -1,6 +1,7 @@
 package main
 
 import "core:slice"
+import "core:strconv"
 import rl "vendor:raylib"
 
 /* swatch */
@@ -195,10 +196,21 @@ draw_entities :: proc(gm: GameMap) {
 		e := entity_get(e_id)
 		if is_visible_to_player(e.pos) {
 			draw_cell(e.tile, e.pos, e.color)
+			if mob, mob_ok := e.etype.(Mobile); mob_ok && _state == .Damage && mob.damage > 0 {
+				buf: [4]u8
+				strconv.itoa(buf[:], mob.damage)
+				ptr := raw_data(buf[:])
+				draw_text_above_entity(e, cstring(ptr))
+			}
 		}
 	}
 }
 
 draw_stats :: proc() {
 
+}
+
+draw_text_above_entity :: proc(e: Entity, text: cstring) {
+	pix_pos := loc_to_screen(e.pos)
+	rl.DrawText(text, i32(pix_pos.x), i32(pix_pos.y - TILE_SIZE / 2), 8, rl.WHITE)
 }

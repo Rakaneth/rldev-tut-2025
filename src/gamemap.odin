@@ -195,7 +195,8 @@ map_can_walk :: proc(m: TerrainData, pos: Point) -> bool {
 /* Map Creation */
 map_make_arena :: proc(width, height: int) -> TerrainData {
 	m := grid_create(width, height, Terrain)
-	map_carve_rect(&m, {0, 0, m.width, m.height})
+	r := rect_from_xywh(0, 0, m.width, m.height)
+	map_carve_rect(&m, r)
 	return m
 }
 

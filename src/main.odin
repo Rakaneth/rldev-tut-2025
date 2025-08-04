@@ -17,10 +17,12 @@ WORLD_TILE_H :: WORLD_PIX_H / TILE_SIZE
 FPS :: 60
 LERP_MOVE_FACTOR :: 0.5
 LERP_SNAP_THRESHOLD :: 0.01
+DAMAGE_TIMER :: 0.3
 
 GameState :: enum {
 	Input,
 	Move,
+	Damage,
 }
 
 /* Game Globals */
@@ -36,6 +38,7 @@ _state: GameState
 _cur_map: GameMap
 _swing_sound: rl.Sound
 _dungeon_music: rl.Music
+_dam_timer: f32
 
 /* Game Lifecycle */
 
@@ -68,12 +71,15 @@ init :: proc() {
 
 	rl.UnloadImage(atlas_img)
 
-	first_floor := map_make_recursive(39, 29, 2)
+	// first_floor := map_make_recursive(39, 29, 2)
+	first_floor := map_make_arena(21, 21)
 	_cur_map = gamemap_create(first_floor)
 	spawn(Mobile_ID.Hero, true)
 	spawn(Mobile_ID.Bat)
 	spawn(Consumable_ID.Potion_Healing)
 	spawn(Consumable_ID.Scroll_Lightning)
+
+	_dam_timer = DAMAGE_TIMER
 }
 
 //Should return false to stop the game
@@ -105,8 +111,18 @@ update :: proc() -> bool {
 	// if _hero_screen_pos == _hero_screen_to {
 	// 	_state = .Input
 	// }
+	case .Damage:
+		_dam_timer -= dt
+		if _dam_timer <= 0 {
+			_dam_timer += DAMAGE_TIMER
+			for e_id in _cur_map.entities {
+				if mob, mob_ok := entity_get_comp_mut(e_id, Mobile); mob_ok {
+					mob.damage = 0
+				}
+			}
+			_state = .Input
+		}
 	}
-
 
 	return true
 }
