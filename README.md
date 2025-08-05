@@ -161,3 +161,6 @@ FoV and basic collision detection are in. As a bonus, I even have sound! I have 
 https://github.com/user-attachments/assets/f08a089e-ccbf-4722-831e-d736157399c4
 
 
+## Week 4 (2025-08-05) Damage, Interface
+
+I have gotten something of a jumpstart on this already. I have the bones in place for damage to be shown on the entity taking the damage (though I do need to alter it for situations where the player is standing where damage would show). I do have `cur_hp` and `max_hp` fields on the `Mobile` entity type. Now, I need to decide on the basics of the combat system.
