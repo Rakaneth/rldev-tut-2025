@@ -15,7 +15,7 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 * [x] Week 1 - Setting Up, Moving @
 * [x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
 * [x] Week 3 - Field of View, Placing Enemies and Kicking Them
-* [-] Week 4 - Doing and Taking Damage, Interface**
+* [ ] **Week 4 - Doing and Taking Damage, Interface**
 * [ ] Week 5 - Items and Invventory, Ranged Scrolls and Targeting
 * [ ] Week 6 - Saving and Loading, Delving into the Dungeon
 * [ ] Week 7 - Increasing Difficulty, Gearing Up
