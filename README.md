@@ -12,14 +12,14 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 
 ## Progress At a Glance
 
-[x] Week 1 - Setting Up, Moving @
-[x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
-[x] Week 3 - Field of View, Placing Enemies and Kicking Them
-**[ ] Week 4 - Doing and Taking Damage, Interface**
-[ ] Week 5 - Items and Invventory, Ranged Scrolls and Targeting
-[ ] Week 6 - Saving and Loading, Delving into the Dungeon
-[ ] Week 7 - Increasing Difficulty, Gearing Up
-[ ] Week 8 - Conclusion
+* [x] Week 1 - Setting Up, Moving @
+* [x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
+* [x] Week 3 - Field of View, Placing Enemies and Kicking Them
+* **[ ] Week 4 - Doing and Taking Damage, Interface**
+* [ ] Week 5 - Items and Invventory, Ranged Scrolls and Targeting
+* [ ] Week 6 - Saving and Loading, Delving into the Dungeon
+* [ ] Week 7 - Increasing Difficulty, Gearing Up
+* [ ] Week 8 - Conclusion
 
 ## Week 1 (2025-07-15) - Development environment, moving @
 
@@ -198,8 +198,8 @@ Various game actions, such as attacking, are governed by these four stats. Basic
         * On success, defender accrues 1 Fatigue and dodges the attack.
         * On failure, attacker hits and rolls damage.
     * On failure, attacker misses.
-    * Some monsters and weapons may test AG to attack.
-    * Some monster attacks may come with secondary effects.
+* Some monsters and weapons may test AG to attack.
+* Some monster attacks may come with secondary effects.
 
 #### HP and Stamina (not yet coded)
 
