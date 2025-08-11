@@ -4,18 +4,13 @@
 			"path": "src/main.odin",
 			"bookmarks": [
 				{
-					"line": 7,
+					"line": 8,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 27,
+					"line": 29,
 					"column": 18,
-					"label": ""
-				},
-				{
-					"line": 42,
-					"column": 20,
 					"label": ""
 				}
 			]
@@ -34,22 +29,22 @@
 					"label": ""
 				},
 				{
-					"line": 63,
+					"line": 67,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 119,
+					"line": 123,
 					"column": 28,
 					"label": ""
 				},
 				{
-					"line": 194,
+					"line": 230,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 292,
+					"line": 334,
 					"column": 28,
 					"label": ""
 				}

@@ -61,6 +61,10 @@ rect_height :: proc(r: Rect) -> int {
 	return r.y2 - r.y1 + 1
 }
 
+rect_center :: proc(r: Rect) -> Point {
+	return {(r.x2 + r.x1) / 2, (r.y2 + r.y1) / 2}
+}
+
 /* Grid Structure */
 
 Grid :: struct($Val: typeid) {
@@ -187,6 +191,38 @@ map_random_floor :: proc(m: TerrainData) -> Point {
 	return result
 }
 
+map_carve_horz :: proc(m: ^TerrainData, start_x, start_y, end_x: int) {
+	// assert(start_x != end_x)
+	low_x := min(start_x, end_x)
+	high_x := max(start_x, end_x)
+	for x in low_x ..= high_x {
+		grid_set(m, {x, start_y}, Terrain.Floor)
+	}
+}
+
+map_carve_vert :: proc(m: ^TerrainData, start_x, start_y, end_y: int) {
+	// assert(start_y != end_y)
+	low_y := min(start_y, end_y)
+	high_y := max(start_y, end_y)
+	for y in low_y ..= high_y {
+		grid_set(m, {start_x, y}, Terrain.Floor)
+	}
+}
+
+map_carve_corridor :: proc(m: ^TerrainData, a, b: Point) {
+	if rand_next_bool() {
+		mid_x := (a.x + b.x) / 2
+		map_carve_horz(m, a.x, a.y, mid_x)
+		map_carve_vert(m, mid_x, a.y, b.y)
+		map_carve_horz(m, mid_x, b.y, b.x)
+	} else {
+		mid_y := (a.y + b.y) / 2
+		map_carve_vert(m, a.x, a.y, mid_y)
+		map_carve_horz(m, a.x, mid_y, b.x)
+		map_carve_vert(m, b.x, mid_y, b.y)
+	}
+}
+
 
 map_can_walk :: proc(m: TerrainData, pos: Point) -> bool {
 	return grid_get(m, pos) in WALKABLE
@@ -268,6 +304,7 @@ map_make_roomer :: proc(
 	}
 
 	m := grid_create(width, height, Terrain)
+	// grid_fill(&m, Terrain.Floor)
 	outer: for _ in 0 ..< tries {
 		new_x := rand_next_int(min_dim, m.width - min_dim)
 		new_y := rand_next_int(min_dim, m.height - min_dim)
@@ -280,11 +317,16 @@ map_make_roomer :: proc(
 				if rect_intersect(new_r, old_r, 2) do continue outer
 			}
 			append(&rect_list, new_r)
+			map_carve_rect(&m, new_r)
 		}
 	}
 
-	for r in rect_list {
-		map_carve_rect(&m, r)
+	for i in 0 ..< len(rect_list) - 1 {
+		r1 := rect_list[i]
+		r2 := rect_list[i + 1]
+		r1c := rect_center(r1)
+		r2c := rect_center(r2)
+		map_carve_corridor(&m, r1c, r2c)
 	}
 
 	return m

@@ -1,5 +1,6 @@
 package main
 
+import "core:log"
 import rl "vendor:raylib"
 
 @(private = "file")
@@ -16,6 +17,10 @@ BP_Mobile :: struct {
 	hp:         int,
 	using base: BP_Base,
 	vision:     int,
+	st:         [2]int,
+	hd:         [2]int,
+	ag:         [2]int,
+	wl:         [2]int,
 }
 
 BP_Consumable :: struct {
@@ -42,6 +47,10 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		color = rl.WHITE,
 		hp = 30,
 		vision = 6,
+		st = {10, 10},
+		ag = {10, 10},
+		hd = {10, 10},
+		wl = {10, 10},
 	},
 	.Bat = {
 		name = "Bat",
@@ -50,6 +59,10 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		color = rl.WHITE,
 		hp = 10,
 		vision = 4,
+		st = {5, 8},
+		ag = {12, 15},
+		hd = {8, 10},
+		wl = {5, 5},
 	},
 }
 
@@ -85,15 +98,30 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 		z = 2
 	}
 
+	st := rand_next_int(template.st.x, template.st.y)
+	ag := rand_next_int(template.ag.x, template.ag.y)
+	hd := rand_next_int(template.hd.x, template.hd.y)
+	wl := rand_next_int(template.wl.x, template.wl.y)
+
 	e := entity_create(
 		id,
 		template.name,
 		template.desc,
 		template.tile,
-		Mobile{energy = 100, cur_hp = template.hp, max_hp = template.hp, vision = template.vision},
+		Mobile {
+			energy = 100,
+			cur_hp = template.hp,
+			max_hp = template.hp,
+			vision = template.vision,
+			stats = {.ST = st, .HD = hd, .AG = ag, .WL = wl},
+		},
 		template.color,
 		z,
 	)
+
+	when ODIN_DEBUG {
+		log.infof("%v", e)
+	}
 
 	return e
 }

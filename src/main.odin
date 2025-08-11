@@ -2,6 +2,7 @@ package main
 
 import "core:c"
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import rl "vendor:raylib"
 
@@ -18,6 +19,7 @@ FPS :: 60
 LERP_MOVE_FACTOR :: 0.5
 LERP_SNAP_THRESHOLD :: 0.01
 DAMAGE_TIMER :: 0.3
+FONT_NUM_GLYPHS :: 46
 
 GameState :: enum {
 	Input,
@@ -39,8 +41,40 @@ _cur_map: GameMap
 _swing_sound: rl.Sound
 _dungeon_music: rl.Music
 _dam_timer: f32
+_font: rl.Font
+_font_atlas: rl.Texture2D
 
 /* Game Lifecycle */
+
+build_font :: proc() {
+	_font.baseSize = 8
+	_font.glyphCount = FONT_NUM_GLYPHS
+	_font.glyphs = raw_data(make([]rl.GlyphInfo, FONT_NUM_GLYPHS))
+	_font.recs = raw_data(make([]rl.Rectangle, FONT_NUM_GLYPHS))
+	_font.texture = _font_atlas
+	i := 0
+	for glyph in 'A' ..= 'Z' {
+		_font.glyphs[i] = {
+			value = glyph,
+		}
+		_font.recs[i] = {f32(i) * 8, 0, 8, 8}
+		i += 1
+	}
+	for num_glyph in '0' ..= '9' {
+		_font.glyphs[i] = {
+			value = num_glyph,
+		}
+		_font.recs[i] = {f32(i - 26) * 8, 8, 8, 8}
+		i += 1
+	}
+	for punc in ":[]/.,!/\"'" {
+		_font.glyphs[i] = {
+			value = punc,
+		}
+		_font.recs[i] = {f32(i - 26) * 8, 88, 8, 8}
+		i += 1
+	}
+}
 
 init :: proc() {
 	rl.InitWindow(SCR_W, SCR_H, TITLE)
@@ -50,6 +84,14 @@ init :: proc() {
 	atlas_data := #load("../assets/gfx/lovable-rogue-cut.png")
 	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data), c.int(len(atlas_data)))
 	_atlas_texture = rl.LoadTextureFromImage(atlas_img)
+	rl.UnloadImage(atlas_img)
+
+	font_data := #load("../assets/gfx/lovable-rogue-font.png")
+	font_img := rl.LoadImageFromMemory(".png", raw_data(font_data), c.int(len(atlas_data)))
+	_font_atlas = rl.LoadTextureFromImage(font_img)
+	rl.UnloadImage(font_img)
+
+	build_font()
 
 	swing_sound_data := #load("../assets/sfx/swing.wav")
 	swing_sound_wav := rl.LoadWaveFromMemory(
@@ -69,10 +111,9 @@ init :: proc() {
 	rl.SetMusicVolume(_dungeon_music, 0.5)
 	// _dungeon_music = rl.LoadMusicStream("./dungeon.xm")
 
-	rl.UnloadImage(atlas_img)
-
-	// first_floor := map_make_recursive(39, 29, 2)
-	first_floor := map_make_arena(21, 21)
+	// first_floor := map_make_recursive(39, 29, 1)
+	// first_floor := map_make_arena(21, 21)
+	first_floor := map_make_roomer(40, 30, 5)
 	_cur_map = gamemap_create(first_floor)
 	spawn(Mobile_ID.Hero, true)
 	spawn(Mobile_ID.Bat)
@@ -149,6 +190,11 @@ shutdown :: proc() {
 	rl.UnloadSound(_swing_sound)
 	rl.CloseAudioDevice()
 	rl.UnloadTexture(_atlas_texture)
+	// rl.UnloadFontData(_font.glyphs, FONT_NUM_GLYPHS)
+	// rl.UnloadFont(_font)
+	free(_font.glyphs)
+	free(_font.recs)
+	rl.UnloadTexture(_font_atlas)
 	rl.CloseWindow()
 }
 
@@ -174,8 +220,12 @@ spawn_consumable :: proc(cons_id: Consumable_ID) -> ObjId {
 }
 
 main :: proc() {
+
 	when ODIN_DEBUG {
 		track: mem.Tracking_Allocator
+		logger := log.create_console_logger(log.Level.Info)
+		context.logger = logger
+		defer log.destroy_console_logger(logger)
 		mem.tracking_allocator_init(&track, context.allocator)
 		context.allocator = mem.tracking_allocator(&track)
 		defer {

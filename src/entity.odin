@@ -9,6 +9,13 @@ PLAYER_ID :: 0
 
 _entity_store: map[ObjId]Entity
 
+Stat :: enum {
+	ST,
+	HD,
+	AG,
+	WL,
+}
+
 Mobile :: struct {
 	energy:  int,
 	cur_hp:  int,
@@ -16,6 +23,7 @@ Mobile :: struct {
 	visible: Grid(bool),
 	vision:  int,
 	damage:  int,
+	stats:   [Stat]int,
 }
 
 Consumable :: struct {
@@ -138,7 +146,7 @@ mobile_update_fov :: proc(e_id: ObjId) {
 			map_pos := Point{int(ox), int(oy)}
 			grid_set(&mob.visible, map_pos, true)
 			if e_id == PLAYER_ID do gamemap_explore(&_cur_map, map_pos)
-			if map_is_wall(_cur_map, map_pos) do break
+			if map_is_wall_or_null(_cur_map, map_pos) do break
 			ox += fx
 			oy += fy
 		}
@@ -154,7 +162,7 @@ mob_take_damage :: proc(e_id: ObjId, dmg: int) {
 mob_bump :: proc(bumper_id: ObjId, bumped: ObjId) {
 	if bumper_id == PLAYER_ID {
 		rl.PlaySound(_swing_sound)
-		mob_take_damage(bumped, 6)
+		mob_take_damage(bumped, 12)
 	}
 }
 

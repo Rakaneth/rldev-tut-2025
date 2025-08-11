@@ -28,6 +28,7 @@ Atlas_Tile :: enum {
 	WallLowerRight,
 	WallUpperLeft,
 	WallUpperRight,
+	Corridor,
 	NullTile,
 	Door,
 	Stairs,
@@ -59,6 +60,7 @@ TextureAtlas := [Atlas_Tile]rl.Rectangle {
 	.WallLowerRight = {128, 0, TILE_SIZE, TILE_SIZE},
 	.WallUpperLeft  = {144, 0, TILE_SIZE, TILE_SIZE},
 	.WallUpperRight = {160, 0, TILE_SIZE, TILE_SIZE},
+	.Corridor       = {16, 32, TILE_SIZE, TILE_SIZE},
 	.Floor          = {0, 32, TILE_SIZE, TILE_SIZE},
 	.Bat            = {16, 48, TILE_SIZE, TILE_SIZE},
 	.Potion         = {144, 32, TILE_SIZE, TILE_SIZE},
@@ -166,7 +168,21 @@ draw_map :: proc(m: TerrainData) {
 			} else {
 				#partial switch t {
 				case .Floor:
-					to_draw = .Floor
+					e := point_by_dir(pos, .Left)
+					w := point_by_dir(pos, .Right)
+					n := point_by_dir(pos, .Up)
+					s := point_by_dir(pos, .Down)
+
+					e_null := grid_get(m, e) == Terrain.NullTile
+					w_null := grid_get(m, w) == Terrain.NullTile
+					n_null := grid_get(m, n) == Terrain.NullTile
+					s_null := grid_get(m, s) == Terrain.NullTile
+
+					if (e_null && w_null) || (n_null && s_null) {
+						to_draw = .Corridor
+					} else {
+						to_draw = .Floor
+					}
 				case .StairsDown:
 					to_draw = .Stairs
 				case .Door:
@@ -200,7 +216,7 @@ draw_entities :: proc(gm: GameMap) {
 				buf: [4]u8
 				strconv.itoa(buf[:], mob.damage)
 				ptr := raw_data(buf[:])
-				draw_text_above_entity(e, cstring(ptr))
+				draw_combat_text(e, cstring(ptr))
 			}
 		}
 	}
@@ -210,7 +226,8 @@ draw_stats :: proc() {
 
 }
 
-draw_text_above_entity :: proc(e: Entity, text: cstring) {
+draw_combat_text :: proc(e: Entity, text: cstring) {
 	pix_pos := loc_to_screen(e.pos)
-	rl.DrawText(text, i32(pix_pos.x), i32(pix_pos.y - TILE_SIZE / 2), 8, rl.WHITE)
+	//rl.DrawText(text, i32(pix_pos.x), i32(pix_pos.y), TILE_SIZE / 2, rl.WHITE)
+	rl.DrawTextEx(_font, text, {pix_pos.x, pix_pos.y}, TILE_SIZE / 2, 0, rl.WHITE)
 }

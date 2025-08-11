@@ -14,7 +14,8 @@
             "request": "launch",
             "program": "${workspaceRoot}/bin/Debug/rltut.exe",
             "cwd": "${workspaceRoot}/bin/Debug",
-            "preLaunchTask": "build-debug"
+            "preLaunchTask": "build-debug",
+            "console": "externalTerminal"
         }
     ]
 }
