@@ -177,7 +177,7 @@ draw :: proc() {
 	draw_entities(_cur_map)
 	draw_stats()
 	rl.EndMode2D()
-	rl.DrawFPS(0, SCR_H - 24)
+	when ODIN_DEBUG {rl.DrawFPS(0, 0)}
 	rl.EndDrawing()
 }
 
