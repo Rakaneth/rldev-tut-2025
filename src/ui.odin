@@ -233,7 +233,7 @@ draw_stats :: proc() {
 		mob_player.cur_hp,
 		mob_player.max_hp,
 	)
-	rl.DrawTextEx(_font, text, {0, 29 * 16}, TILE_SIZE, 0, rl.WHITE)
+	rl.DrawTextEx(_font, text, {0, 29 * 16}, TILE_SIZE * 3 / 4, 0, rl.WHITE)
 }
 
 draw_combat_text :: proc(e: Entity, text: cstring) {

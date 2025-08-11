@@ -71,7 +71,7 @@ build_font :: proc() {
 		_font.glyphs[i] = {
 			value = punc,
 		}
-		_font.recs[i] = {f32(i - 26) * 8, 88, 8, 8}
+		_font.recs[i] = {f32(i - 26) * 8, 8, 8, 8}
 		i += 1
 	}
 }
