@@ -175,6 +175,7 @@ draw :: proc() {
 	draw_map(_cur_map)
 	//draw_tile(.Hero, _hero_screen_pos.x, _hero_screen_pos.y, rl.BEIGE)
 	draw_entities(_cur_map)
+	draw_stats()
 	rl.EndMode2D()
 	rl.DrawFPS(0, SCR_H - 24)
 	rl.EndDrawing()

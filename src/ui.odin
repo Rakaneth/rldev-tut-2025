@@ -223,7 +223,17 @@ draw_entities :: proc(gm: GameMap) {
 }
 
 draw_stats :: proc() {
-
+	mob_player := entity_get_comp(PLAYER_ID, Mobile)
+	text := rl.TextFormat(
+		"ST: %d HD: %d AG: %d WL %d HP: %d/%d",
+		mob_player.stats[.ST],
+		mob_player.stats[.HD],
+		mob_player.stats[.AG],
+		mob_player.stats[.WL],
+		mob_player.cur_hp,
+		mob_player.max_hp,
+	)
+	rl.DrawTextEx(_font, text, {0, 29 * 16}, TILE_SIZE, 0, rl.WHITE)
 }
 
 draw_combat_text :: proc(e: Entity, text: cstring) {
