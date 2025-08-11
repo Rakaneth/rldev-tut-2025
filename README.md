@@ -10,6 +10,17 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 
 # DevLog
 
+## Progress At a Glance
+
+[x] Week 1 - Setting Up, Moving @
+[x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
+[x] Week 3 - Field of View, Placing Enemies and Kicking Them
+**[ ] Week 4 - Doing and Taking Damage, Interface**
+[ ] Week 5 - Items and Invventory, Ranged Scrolls and Targeting
+[ ] Week 6 - Saving and Loading, Delving into the Dungeon
+[ ] Week 7 - Increasing Difficulty, Gearing Up
+[ ] Week 8 - Conclusion
+
 ## Week 1 (2025-07-15) - Development environment, moving @
 
 ### Dev Environment
@@ -164,3 +175,38 @@ https://github.com/user-attachments/assets/f08a089e-ccbf-4722-831e-d736157399c4
 ## Week 4 (2025-08-05) Damage, Interface
 
 I have gotten something of a jumpstart on this already. I have the bones in place for damage to be shown on the entity taking the damage (though I do need to alter it for situations where the player is standing where damage would show). I do have `cur_hp` and `max_hp` fields on the `Mobile` entity type. Now, I need to decide on the basics of the combat system.
+
+### 2025-08-10
+
+![Stats](/assets/screenshots/Stats.png)
+
+#### Combat System
+
+I have decided on a basic d20 system inspired by games like [Cairn](https://cairnrpg.com/) and [Dragonbane](https://freeleaguepublishing.com/games/dragonbane/). All combatants will have four attributes:
+
+* ST (Strength)
+* HD (Hardiness)
+* AG (Agility)
+* WL (Willpower)
+
+Various game actions, such as attacking, are governed by these four stats. Basic success shall be determined by rolling a d20 against the stat in question. A roll **equal to or below** the given stat is a success. Resisting an adder's poisonous bite, for example, would require a test against HD.
+
+#### The Basic Attack (not yet coded)
+
+* Attacker tests ST.
+    * On success, defender tests AG.
+        * On success, defender accrues 1 Fatigue and dodges the attack.
+        * On failure, attacker hits and rolls damage.
+    * On failure, attacker misses.
+    * Some monsters and weapons may test AG to attack.
+    * Some monster attacks may come with secondary effects.
+
+#### HP and Stamina (not yet coded)
+
+A creature with 0 HP is **slain.**
+A creature with Fatigue >= Stamina is **exhausted** and must **recover**.
+
+**Recovering** takes an action and removes (WL / 2) Fatigue.
+
+HP is influenced by HD.
+Stamina is influenced by HD and WL.
