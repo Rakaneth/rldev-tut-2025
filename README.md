@@ -195,13 +195,19 @@ Various game actions, such as attacking, are governed by these four stats. Basic
 
 * Attacker tests ST.
     * On success, defender tests AG.
-        * On success, defender accrues 1 Fatigue and dodges the attack.
-        * On failure, attacker hits and rolls damage.
+        * On a 1 from the attacker, defender cannot dodge.
+        * Attacker rolls damage.
+        * On success, defender accrues Fatigue equal to the damage and dodges the attack.
+        * On failure, defender takes HP damage.
     * On failure, attacker misses.
+* Attack Fatigue costs:
+    * 0 on a 1 rolled on the attack
+    * 3 on a 20 rolled on the attack
+    * 1 otherwise
 * Some monsters and weapons may test AG to attack.
 * Some monster attacks may come with secondary effects.
 
-#### HP and Stamina (not yet coded)
+#### HP and Stamina (partially coded)
 
 A creature with 0 HP is **slain.**
 A creature with Fatigue >= Stamina is **exhausted** and must **recover**.

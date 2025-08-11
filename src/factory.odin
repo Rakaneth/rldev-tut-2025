@@ -102,6 +102,7 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 	ag := rand_next_int(template.ag.x, template.ag.y)
 	hd := rand_next_int(template.hd.x, template.hd.y)
 	wl := rand_next_int(template.wl.x, template.wl.y)
+	hp := template.hp + hd * 2
 
 	e := entity_create(
 		id,
@@ -110,9 +111,10 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 		template.tile,
 		Mobile {
 			energy = 100,
-			cur_hp = template.hp,
-			max_hp = template.hp,
+			cur_hp = hp,
+			max_hp = hp,
 			vision = template.vision,
+			stamina = hd + wl,
 			stats = {.ST = st, .HD = hd, .AG = ag, .WL = wl},
 		},
 		template.color,

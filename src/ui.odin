@@ -225,7 +225,7 @@ draw_entities :: proc(gm: GameMap) {
 draw_stats :: proc() {
 	mob_player := entity_get_comp(PLAYER_ID, Mobile)
 	text := rl.TextFormat(
-		"ST: %d HD: %d AG: %d WL %d HP: %d/%d",
+		"ST: %d HD: %d AG: %d WL: %d HP: %d/%d",
 		mob_player.stats[.ST],
 		mob_player.stats[.HD],
 		mob_player.stats[.AG],

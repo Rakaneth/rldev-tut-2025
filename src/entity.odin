@@ -24,6 +24,8 @@ Mobile :: struct {
 	vision:  int,
 	damage:  int,
 	stats:   [Stat]int,
+	stamina: int,
+	fatigue: int,
 }
 
 Consumable :: struct {
