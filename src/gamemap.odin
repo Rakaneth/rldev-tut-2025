@@ -329,6 +329,25 @@ map_make_roomer :: proc(
 		map_carve_corridor(&m, r1c, r2c)
 	}
 
+	for y in 0 ..< m.height {
+		for x in 0 ..< m.width {
+			pos := Point{x, y}
+			n := point_by_dir(pos, .Up)
+			s := point_by_dir(pos, .Down)
+			e := point_by_dir(pos, .Right)
+			w := point_by_dir(pos, .Left)
+
+			if grid_get(m, pos) == Terrain.Floor {
+				neis := [4]Point{n, s, e, w}
+				for nei in neis {
+					if grid_get(m, nei) == Terrain.NullTile {
+						grid_set(&m, nei, Terrain.Wall)
+					}
+				}
+			}
+		}
+	}
+
 	return m
 }
 
