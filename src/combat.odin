@@ -1,7 +1,33 @@
 package main
 
+import "core:log"
+import "core:slice"
+
 rolld20 :: proc() -> int {
 	return rand_next_int(1, 20)
+}
+
+@(private = "file")
+sum_lambda :: proc(a, b: int) -> int {
+	return a + b
+}
+
+roll_fallen_hero_stats :: proc(out: []int) {
+	assert(len(out) >= 4)
+	for i in 0 ..< 4 {
+		rolls: [4]int
+		for &r in rolls {
+			r = rand_next_int(1, 6)
+		}
+		slice.sort(rolls[:])
+		when ODIN_DEBUG {
+			log.infof("DICE: rolling fallen hero stat %v: %v", i, rolls)
+		}
+		out[i] = slice_reduce(rolls[1:], sum_lambda)
+	}
+	when ODIN_DEBUG {
+		log.infof("DICE: fallen hero stats: %v", out)
+	}
 }
 
 stat_test :: proc(mob: Mobile, stat: Stat) -> (int, bool) {
@@ -10,9 +36,90 @@ stat_test :: proc(mob: Mobile, stat: Stat) -> (int, bool) {
 }
 
 is_slain :: proc(mob: Mobile) -> bool {
-	return mob.cur_hp < 0
+	return mob.cur_hp <= 0
 }
 
 is_exhausted :: proc(mob: Mobile) -> bool {
-	return mob.stamina < mob.fatigue
+	return mob.stamina <= mob.fatigue
+}
+
+mob_take_damage :: proc(e_mob: ^Mobile, dmg: int) {
+	e_mob.damage = dmg
+	e_mob.cur_hp -= dmg
+	_state = .Damage
+}
+
+mob_heal :: proc(e_mob: ^Mobile, amt: int) {
+	e_mob.cur_hp = min(e_mob.max_hp, e_mob.cur_hp + amt)
+}
+
+basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
+	att_stam_cost := 1
+	/*
+		Homage to Dragonbane: 
+		nat 1s are called "dragons"
+		nat 20s are called "demons"
+	*/
+	if att_roll, hit := stat_test(attacker.type^, attacker.atk_stat); hit {
+		dragon := att_roll == 1
+		raw_dmg := rand_next_int(attacker.base_atk.x, attacker.base_atk.y)
+		str_bonus := attacker.atk_stat == .ST ? max(0, attacker.stats[.ST] - 16) : 0
+		dmg := raw_dmg + str_bonus
+
+		when ODIN_DEBUG {
+			log.infof(
+				"COMBAT: %v hits %v with a roll of %v (test %v of %v); %v damage",
+				attacker.name,
+				defender.name,
+				att_roll,
+				attacker.atk_stat,
+				attacker.stats[attacker.atk_stat],
+				dmg,
+			)
+		}
+
+		if dragon {
+			att_stam_cost = 0
+			mob_take_damage(defender.type, dmg)
+			when ODIN_DEBUG {
+				log.infof(
+					"COMBAT: %v rolls a DRAGON on attack! No stam cost, no dodging",
+					attacker.name,
+				)
+				log.infof("COMBAT: %v takes %v damage", defender.name, dmg)
+			}
+			return
+		}
+
+		if def_roll, dodge := stat_test(defender.type^, .AG); dodge {
+			defender.fatigue += dmg
+			when ODIN_DEBUG {
+				log.infof("COMBAT: %v dodges, gaining %v fatigue", defender.name, dmg)
+			}
+		} else {
+			mob_take_damage(defender.type, dmg)
+			when ODIN_DEBUG {
+				log.infof("COMBAT: %v fails to dodge, taking %v damage", defender.name, dmg)
+			}
+		}
+	} else {
+		demon := att_roll == 20
+		if demon {
+			att_stam_cost = 3
+			when ODIN_DEBUG {
+				log.infof("COMBAT: %v rolls a DEMON on attack! Increased fatigue!", attacker.name)
+			}
+		}
+		when ODIN_DEBUG {
+			log.infof(
+				"COMBAT: %v misses the attack with a roll of %v (test %v of %v)",
+				attacker.name,
+				att_roll,
+				attacker.atk_stat,
+				attacker.stats[attacker.atk_stat],
+			)
+		}
+	}
+
+	attacker.fatigue += att_stam_cost
 }

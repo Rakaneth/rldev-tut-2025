@@ -191,7 +191,7 @@ I have decided on a basic d20 system inspired by games like [Cairn](https://cair
 
 Various game actions, such as attacking, are governed by these four stats. Basic success shall be determined by rolling a d20 against the stat in question. A roll **equal to or below** the given stat is a success. Resisting an adder's poisonous bite, for example, would require a test against HD.
 
-#### The Basic Attack (not yet coded)
+#### The Basic Attack
 
 * Attacker tests ST.
     * On success, defender tests AG.

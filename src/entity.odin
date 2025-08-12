@@ -16,16 +16,20 @@ Stat :: enum {
 	WL,
 }
 
+Attack :: distinct [2]int
+
 Mobile :: struct {
-	energy:  int,
-	cur_hp:  int,
-	max_hp:  int,
-	visible: Grid(bool),
-	vision:  int,
-	damage:  int,
-	stats:   [Stat]int,
-	stamina: int,
-	fatigue: int,
+	energy:   int,
+	cur_hp:   int,
+	max_hp:   int,
+	visible:  Grid(bool),
+	vision:   int,
+	damage:   int,
+	stats:    [Stat]int,
+	stamina:  int,
+	fatigue:  int,
+	base_atk: Attack,
+	atk_stat: Stat,
 }
 
 Consumable :: struct {
@@ -155,16 +159,11 @@ mobile_update_fov :: proc(e_id: ObjId) {
 	}
 }
 
-mob_take_damage :: proc(e_id: ObjId, dmg: int) {
-	mob := entity_get_comp_mut(e_id, Mobile)
-	mob.damage = dmg
-	_state = .Damage
-}
-
-mob_bump :: proc(bumper_id: ObjId, bumped: ObjId) {
-	if bumper_id == PLAYER_ID {
-		rl.PlaySound(_swing_sound)
-		mob_take_damage(bumped, 12)
+mob_bump :: proc(bumper_id: ObjId, bumped_id: ObjId) {
+	if bumper_id == PLAYER_ID || bumped_id == PLAYER_ID {
+		attacker := entity_get_comp_mut(bumper_id, Mobile)
+		defender := entity_get_comp_mut(bumped_id, Mobile)
+		basic_attack(attacker, defender)
 	}
 }
 

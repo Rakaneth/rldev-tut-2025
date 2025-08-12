@@ -21,6 +21,8 @@ BP_Mobile :: struct {
 	hd:         [2]int,
 	ag:         [2]int,
 	wl:         [2]int,
+	base_atk:   Attack,
+	atk_stat:   Stat,
 }
 
 BP_Consumable :: struct {
@@ -45,24 +47,27 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		desc = "The Hero!",
 		tile = .Hero,
 		color = rl.WHITE,
-		hp = 30,
+		hp = 10,
 		vision = 6,
 		st = {10, 10},
 		ag = {10, 10},
 		hd = {10, 10},
 		wl = {10, 10},
+		base_atk = {1, 2},
 	},
 	.Bat = {
 		name = "Bat",
 		desc = "A squeaky Bat",
 		tile = .Bat,
 		color = rl.WHITE,
-		hp = 10,
+		hp = 5,
 		vision = 4,
 		st = {5, 8},
 		ag = {12, 15},
 		hd = {8, 10},
 		wl = {5, 5},
+		base_atk = {1, 2},
+		atk_stat = .AG,
 	},
 }
 
@@ -102,6 +107,15 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 	ag := rand_next_int(template.ag.x, template.ag.y)
 	hd := rand_next_int(template.hd.x, template.hd.y)
 	wl := rand_next_int(template.wl.x, template.wl.y)
+
+	if is_player {
+		new_stats: [4]int
+		roll_fallen_hero_stats(new_stats[:])
+		st = new_stats[0]
+		hd = new_stats[1]
+		ag = new_stats[2]
+		wl = new_stats[3]
+	}
 	hp := template.hp + hd * 2
 
 	e := entity_create(
@@ -116,6 +130,8 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 			vision = template.vision,
 			stamina = hd + wl,
 			stats = {.ST = st, .HD = hd, .AG = ag, .WL = wl},
+			base_atk = template.base_atk,
+			atk_stat = template.atk_stat,
 		},
 		template.color,
 		z,
