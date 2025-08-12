@@ -15,8 +15,8 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 * [x] Week 1 - Setting Up, Moving @
 * [x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
 * [x] Week 3 - Field of View, Placing Enemies and Kicking Them
-* [ ] **Week 4 - Doing and Taking Damage, Interface**
-* [ ] Week 5 - Items and Invventory, Ranged Scrolls and Targeting
+* [x] Week 4 - Doing and Taking Damage, Interface
+* [ ] Week 5 - **Items and Invventory, Ranged Scrolls and Targeting**
 * [ ] Week 6 - Saving and Loading, Delving into the Dungeon
 * [ ] Week 7 - Increasing Difficulty, Gearing Up
 * [ ] Week 8 - Conclusion
@@ -216,3 +216,7 @@ A creature with Fatigue >= Stamina is **exhausted** and must **recover**.
 
 HP is influenced by HD.
 Stamina is influenced by HD and WL.
+
+## Week 5 (2025-08-12) Inventory, Items, Targeting
+
+I have the bones in place for basic attacks and doing damage. I will continue to revise the system with equipment and consumables. As usual, new code will be in the `week5` branch.
