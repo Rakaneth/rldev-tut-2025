@@ -7,10 +7,11 @@ import rl "vendor:raylib"
 _cur_id: ObjId = 1
 
 BP_Base :: struct {
-	name:  string,
-	desc:  string,
-	tile:  Atlas_Tile,
-	color: rl.Color,
+	name:      string,
+	desc:      string,
+	tile:      Atlas_Tile,
+	color:     rl.Color,
+	inventory: int,
 }
 
 BP_Mobile :: struct {
@@ -38,6 +39,10 @@ Mobile_ID :: enum {
 Consumable_ID :: enum {
 	Potion_Healing,
 	Scroll_Lightning,
+	Potion_ST,
+	Potion_HD,
+	Potion_AG,
+	Potion_WL,
 }
 
 @(rodata)
@@ -47,6 +52,7 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		desc = "The Hero!",
 		tile = .Hero,
 		color = rl.WHITE,
+		inventory = 8,
 		hp = 10,
 		vision = 6,
 		st = {10, 10},
@@ -84,6 +90,34 @@ CONSUMABLES := [Consumable_ID]BP_Consumable {
 		name = "Scroll of Lightning",
 		desc = "A mystical scroll with a lightning spell inscribed on it",
 		tile = .Scroll,
+		color = rl.YELLOW,
+		uses = 1,
+	},
+	.Potion_ST = {
+		name = "Potion of Strength",
+		desc = "A mysterious brew. Smells like a gymnasium.",
+		tile = .Potion,
+		color = rl.ORANGE,
+		uses = 1,
+	},
+	.Potion_HD = {
+		name = "Potion of Hardiness",
+		desc = "A mysterious brew. Powdered crystals float in the mixture.",
+		tile = .Potion,
+		color = rl.DARKBROWN,
+		uses = 1,
+	},
+	.Potion_AG = {
+		name = "Potion of Agility",
+		desc = "A mysterious brew. Smells like a fresh breeze.",
+		tile = .Potion,
+		color = rl.GREEN,
+		uses = 1,
+	},
+	.Potion_WL = {
+		name = "Potion of Will",
+		desc = "A mysterious brew. Smells like a burning candle.",
+		tile = .Potion,
 		color = rl.YELLOW,
 		uses = 1,
 	},
@@ -137,6 +171,7 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 		z,
 	)
 
+	e.inventory.capacity = template.inventory
 	when ODIN_DEBUG {
 		log.infof("%v", e)
 	}

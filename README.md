@@ -220,3 +220,7 @@ Stamina is influenced by HD and WL.
 ## Week 5 (2025-08-12) Inventory, Items, Targeting
 
 I have the bones in place for basic attacks and doing damage. I will continue to revise the system with equipment and consumables. As usual, new code will be in the `week5` branch.
+
+### 2025-08-13
+
+Added basic inventory and monster movement. Currently working on consumable uses. Stat potions will be an important part of progression.

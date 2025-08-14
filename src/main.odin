@@ -19,7 +19,8 @@ FPS :: 60
 LERP_MOVE_FACTOR :: 0.5
 LERP_SNAP_THRESHOLD :: 0.01
 DAMAGE_TIMER :: 0.3
-FONT_NUM_GLYPHS :: 46
+FONT_NUM_GLYPHS :: 73
+DMAP_SENTINEL :: 9999
 
 GameState :: enum {
 	Input,
@@ -74,6 +75,20 @@ build_font :: proc() {
 		_font.recs[i] = {f32(i - 26) * 8, 8, 8, 8}
 		i += 1
 	}
+	_font.glyphs[i] = {
+		value = '-',
+	}
+	_font.recs[i] = {f32(21 * 8), 8, 8, 8}
+	i += 1
+
+	j := 0
+	for small in 'a' ..= 'z' {
+		_font.glyphs[i + j] = {
+			value = small,
+		}
+		_font.recs[i + j] = {f32(j) * 8, 16, 8, 8}
+		j += 1
+	}
 }
 
 init :: proc() {
@@ -121,11 +136,22 @@ init :: proc() {
 	spawn(Consumable_ID.Scroll_Lightning)
 
 	_dam_timer = DAMAGE_TIMER
+	mobile_update_fov(PLAYER_ID)
+}
+
+get_player :: proc() -> Entity {
+	return entity_get(PLAYER_ID)
+}
+
+get_player_mut :: proc() -> ^Entity {
+	return entity_get_mut(PLAYER_ID)
 }
 
 //Should return false to stop the game
 update :: proc() -> bool {
 	dt := rl.GetFrameTime()
+	moved: MoveResult = .NoMove
+	player := get_player()
 
 	switch _state {
 	case .Input:
@@ -133,25 +159,42 @@ update :: proc() -> bool {
 		case rl.WindowShouldClose():
 			return false
 		case rl.IsKeyPressed(.W):
-			entity_move_by(PLAYER_ID, .Up)
+			moved = entity_move_by(PLAYER_ID, .Up)
 		case rl.IsKeyPressed(.A):
-			entity_move_by(PLAYER_ID, .Left)
+			moved = entity_move_by(PLAYER_ID, .Left)
 		case rl.IsKeyPressed(.S):
-			entity_move_by(PLAYER_ID, .Down)
+			moved = entity_move_by(PLAYER_ID, .Down)
 		case rl.IsKeyPressed(.D):
-			entity_move_by(PLAYER_ID, .Right)
+			moved = entity_move_by(PLAYER_ID, .Right)
+		case rl.IsKeyPressed(.G):
+			for e_id in _cur_map.entities {
+				item := entity_get(e_id)
+				if e_id != PLAYER_ID && item.pos == player.pos {
+					entity_pick_up_item(PLAYER_ID, e_id)
+				}
+			}
+		case rl.IsKeyPressed(.SPACE):
+			first_item := player.inventory.items[0]
+			entity_drop_item(PLAYER_ID, first_item)
 		}
-		mobile_update_fov(PLAYER_ID)
 
+		#partial switch moved {
+		case .Moved:
+			_state = .Move
+		}
 	case .Move:
-	// _hero_screen_pos.x = rl.Lerp(_hero_screen_pos.x, _hero_screen_to.x, LERP_MOVE_FACTOR)
-	// _hero_screen_pos.y = rl.Lerp(_hero_screen_pos.y, _hero_screen_to.y, LERP_MOVE_FACTOR)
-	// if rl.Vector2Distance(_hero_screen_pos, _hero_screen_to) < LERP_SNAP_THRESHOLD {
-	// 	_hero_screen_pos = _hero_screen_to
-	// }
-	// if _hero_screen_pos == _hero_screen_to {
-	// 	_state = .Input
-	// }
+		mobile_update_fov(PLAYER_ID)
+		gamemap_dmap_update(&_cur_map, get_player().pos)
+		e_moved := MoveResult.NoMove
+		damage_step := false
+		for e_id in _cur_map.entities {
+			if e_mob, e_mob_ok := entity_get_comp(e_id, Mobile); e_mob_ok && e_id != PLAYER_ID {
+				mob_move_dir := dmap_get_next_step(_cur_map.enemy_dmap, e_mob.pos)
+				e_moved = entity_move_by(e_id, mob_move_dir)
+				if e_moved == .Bump do _state = .Damage
+			}
+		}
+		if !damage_step do _state = .Input
 	case .Damage:
 		_dam_timer -= dt
 		if _dam_timer <= 0 {

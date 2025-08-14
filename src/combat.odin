@@ -3,8 +3,18 @@ package main
 import "core:log"
 import "core:slice"
 
+/* Game System */
+
+roll_dice :: proc(sides: int, num := 1) -> int {
+	acc := 0
+	for _ in 0 ..< num {
+		acc += rand_next_int(1, sides)
+	}
+	return acc
+}
+
 rolld20 :: proc() -> int {
-	return rand_next_int(1, 20)
+	return roll_dice(20)
 }
 
 @(private = "file")

@@ -9,12 +9,12 @@
 					"label": ""
 				},
 				{
-					"line": 29,
+					"line": 30,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 46,
+					"line": 47,
 					"column": 18,
 					"label": ""
 				}
@@ -51,6 +51,16 @@
 				{
 					"line": 353,
 					"column": 28,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/combat.odin",
+			"bookmarks": [
+				{
+					"line": 5,
+					"column": 17,
 					"label": ""
 				}
 			]
