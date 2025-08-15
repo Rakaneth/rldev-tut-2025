@@ -224,3 +224,7 @@ I have the bones in place for basic attacks and doing damage. I will continue to
 ### 2025-08-13
 
 Added basic inventory and monster movement. Currently working on consumable uses. Stat potions will be an important part of progression.
+
+### 2025-08-14
+
+Tweaked the inventory UI and fully implemented the Potion of Healing. Also improved the modularity of debugging messages.

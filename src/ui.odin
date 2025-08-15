@@ -6,10 +6,13 @@ import "core:strings"
 import rl "vendor:raylib"
 
 /* swatch */
-STONE_LIGHT: rl.Color : {192, 192, 192, 255}
-STONE_DARK: rl.Color : {96, 96, 96, 255}
-STAIRS: rl.Color : {192, 192, 0, 255}
-WOOD: rl.Color : {192, 101, 96, 255}
+COLOR_STONE_LIGHT: rl.Color : {192, 192, 192, 255}
+COLOR_STONE_DARK: rl.Color : {96, 96, 96, 255}
+COLOR_STAIRS: rl.Color : {192, 192, 0, 255}
+COLOR_WOOD: rl.Color : {192, 101, 96, 255}
+COLOR_UI_TEXT: rl.Color = {192, 192, 0, 255}
+
+/* other UI constants */
 ITEM_LIST_Y :: 80
 
 Atlas_Tile :: enum {
@@ -237,7 +240,7 @@ draw_stats :: proc() {
 		mob_player.stamina,
 		mob_player.fatigue,
 	)
-	rl.DrawTextEx(_font, text, {0, 29 * 16}, TILE_SIZE * 5 / 7, 0, rl.WHITE)
+	rl.DrawTextEx(_font, text, {0, 29 * 16}, TILE_SIZE * 5 / 7, 0, COLOR_UI_TEXT)
 }
 
 draw_combat_text :: proc(e: Entity, text: cstring) {
@@ -249,22 +252,42 @@ draw_combat_text :: proc(e: Entity, text: cstring) {
 
 draw_item_menu :: proc() {
 	item_ids := get_player().inventory.items
+	font_size := f32(TILE_SIZE * 3 / 4)
+
+	i := 0
 
 	if len(item_ids) > 0 {
-		for item_id, i in item_ids {
+		for item_id in item_ids {
 			item := entity_get_comp(item_id, Consumable)
 			txt := rl.TextFormat("%d: %s x%d", i + 1, item.name, item.uses)
 			rl.DrawTextEx(
 				_font,
 				txt,
-				{0, f32(ITEM_LIST_Y + i * TILE_SIZE / 2)},
-				TILE_SIZE / 2,
+				{0, f32(ITEM_LIST_Y + f32(i) * font_size)},
+				font_size,
 				0,
-				rl.BLUE,
+				COLOR_UI_TEXT,
 			)
+			i += 1
 		}
+		rl.DrawTextEx(
+			_font,
+			"[ESC] to close backpack",
+			{0, f32(ITEM_LIST_Y + f32(i) * font_size)},
+			font_size,
+			0,
+			COLOR_UI_TEXT,
+		)
 	} else {
-		rl.DrawTextEx(_font, "No items in backpack", {0, ITEM_LIST_Y}, TILE_SIZE / 2, 0, rl.BLUE)
+		rl.DrawTextEx(_font, "No items in backpack", {0, ITEM_LIST_Y}, font_size, 0, COLOR_UI_TEXT)
+		rl.DrawTextEx(
+			_font,
+			"[ESC] to close backpack",
+			{0, ITEM_LIST_Y + font_size},
+			font_size,
+			0,
+			COLOR_UI_TEXT,
+		)
 	}
 
 }

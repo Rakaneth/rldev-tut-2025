@@ -110,7 +110,6 @@ init :: proc() {
 	rl.UnloadImage(font_img)
 
 	build_font()
-	rl.GuiSetFont(_font)
 
 	swing_sound_data := #load("../assets/sfx/swing.wav")
 	swing_sound_wav := rl.LoadWaveFromMemory(
@@ -127,7 +126,7 @@ init :: proc() {
 		raw_data(dungeon_mus_data),
 		c.int(len(dungeon_mus_data)),
 	)
-	rl.SetMusicVolume(_dungeon_music, 0.5)
+	rl.SetMusicVolume(_dungeon_music, 0.3)
 	// _dungeon_music = rl.LoadMusicStream("./dungeon.xm")
 
 	// first_floor := map_make_recursive(39, 29, 1)
@@ -135,7 +134,7 @@ init :: proc() {
 	first_floor := map_make_roomer(40, 30, 5)
 	_cur_map = gamemap_create(first_floor)
 	spawn(Mobile_ID.Hero, true)
-	// spawn(Mobile_ID.Bat)
+	spawn(Mobile_ID.Bat)
 	spawn(Consumable_ID.Potion_Healing)
 	spawn(Consumable_ID.Scroll_Lightning)
 

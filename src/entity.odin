@@ -31,6 +31,7 @@ Mobile :: struct {
 	fatigue:  int,
 	base_atk: Attack,
 	atk_stat: Stat,
+	base_hp:  int,
 }
 
 Consumable :: struct {
@@ -184,7 +185,7 @@ mob_bump :: proc(bumper_id: ObjId, bumped_id: ObjId) {
 	if bumper_id == PLAYER_ID || bumped_id == PLAYER_ID {
 		attacker := entity_get_comp_mut(bumper_id, Mobile)
 		defender := entity_get_comp_mut(bumped_id, Mobile)
-		basic_attack(attacker, defender)
+		system_basic_attack(attacker, defender)
 	}
 }
 
@@ -236,6 +237,9 @@ entity_drop_item :: proc(dropper: ObjId, dropped: ObjId) {
 mobile_gain_stat :: proc(gainer: ObjId, stat: Stat, amt := 1) {
 	if gainer_entity, ok := entity_get_comp_mut(gainer, Mobile); ok {
 		gainer_entity.stats[stat] += amt
+		if stat == .WL || stat == .HD {
+			system_update_vitals(gainer_entity)
+		}
 	}
 }
 
@@ -245,8 +249,8 @@ mobile_use_consumable :: proc(user: ObjId, consumable: ObjId) {
 	if user_ok && cons_ok {
 		#partial switch cons_entity.consumable_id {
 		case Consumable_ID.Potion_Healing:
-			healing := roll_dice(6, 2)
-			mob_heal(user_entity, healing)
+			healing := system_roll_dice(6, 2)
+			system_mob_heal(user_entity, healing)
 		case Consumable_ID.Potion_ST:
 			mobile_gain_stat(user, .ST)
 		case Consumable_ID.Potion_HD:

@@ -64,6 +64,16 @@
 					"label": ""
 				}
 			]
+		},
+		{
+			"path": "src/ui.odin",
+			"bookmarks": [
+				{
+					"line": 7,
+					"column": 12,
+					"label": ""
+				}
+			]
 		}
 	]
 }

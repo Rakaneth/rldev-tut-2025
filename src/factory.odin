@@ -144,7 +144,7 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 
 	if is_player {
 		new_stats: [4]int
-		roll_fallen_hero_stats(new_stats[:])
+		system_roll_fallen_hero_stats(new_stats[:])
 		st = new_stats[0]
 		hd = new_stats[1]
 		ag = new_stats[2]
@@ -166,6 +166,7 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 			stats = {.ST = st, .HD = hd, .AG = ag, .WL = wl},
 			base_atk = template.base_atk,
 			atk_stat = template.atk_stat,
+			base_hp = template.hp,
 		},
 		template.color,
 		z,
