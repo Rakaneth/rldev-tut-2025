@@ -46,6 +46,7 @@ _dam_timer: f32
 _font: rl.Font
 _font_atlas: rl.Texture2D
 _damage := false
+_target: ObjId
 
 /* Game Lifecycle */
 
@@ -160,6 +161,7 @@ item_try_use :: proc(user: ObjId, idx: int) -> bool {
 	return false
 }
 
+
 //Should return false to stop the game
 update :: proc() -> bool {
 	dt := rl.GetFrameTime()
@@ -194,6 +196,13 @@ update :: proc() -> bool {
 			}
 		case rl.IsKeyPressed(.I):
 			_state = .Item
+		case rl.IsMouseButtonPressed(rl.MouseButton.LEFT):
+			mouse_map_pos := get_world_mouse_pos()
+			if maybe_target, target_ok := gamemap_get_mob_at(_cur_map, mouse_map_pos);
+			   target_ok && is_visible_to_player(mouse_map_pos) {
+				_target = maybe_target.id
+			}
+
 		case rl.IsKeyPressed(.ESCAPE):
 			return false
 		}
@@ -250,6 +259,7 @@ update :: proc() -> bool {
 		} else {
 			_state = .Input
 		}
+
 	case .Damage:
 		_dam_timer -= dt
 		if _dam_timer <= 0 {
@@ -273,6 +283,7 @@ draw :: proc() {
 	draw_map(_cur_map)
 	//draw_tile(.Hero, _hero_screen_pos.x, _hero_screen_pos.y, rl.BEIGE)
 	draw_entities(_cur_map)
+	highlight_hover()
 	draw_stats()
 	if _state == .Item {
 		draw_item_menu()
@@ -319,6 +330,63 @@ spawn_consumable :: proc(cons_id: Consumable_ID) -> ObjId {
 	entity_add(cons)
 	gamemap_add_entity(&_cur_map, cons)
 	return cons.id
+}
+
+/* Custom Iterators */
+
+EntityIterator :: struct {
+	index: int,
+	data:  []ObjId,
+}
+
+make_entity_iterator :: proc(data: []ObjId) -> EntityIterator {
+	return {data = data}
+}
+
+entities_at_pos_comp :: proc(
+	it: ^EntityIterator,
+	pos: Point,
+	$T: typeid,
+) -> (
+	val: EntityInst(T),
+	idx: int,
+	cond: bool,
+) {
+	cond = it.index < len(it.data)
+
+	for ; cond; cond = it.index < len(it.data) {
+		e, ok := entity_get_comp(it.data[it.index])
+		if !ok || e.pos != pos {
+			it.index += 1
+			continue
+		}
+
+		val = e
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
+}
+
+entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: int, cond: bool) {
+	cond = it.index < len(it.data)
+
+	for ; cond; cond = it.index < len(it.data) {
+		e := entity_get(it.data[it.index])
+		if e.pos != pos {
+			it.index += 1
+			continue
+		}
+
+		val = e
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
 }
 
 main :: proc() {

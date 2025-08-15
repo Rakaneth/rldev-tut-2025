@@ -437,6 +437,26 @@ gamemap_get_mob_at_mut :: proc(gm: GameMap, pos: Point) -> (EntityInstMut(Mobile
 	return {}, false
 }
 
+gamemap_get_entity_at :: proc(gm: GameMap, pos: Point) -> (Entity, int) {
+	result: Entity
+	cur_z := -1
+	i := 0
+	for e_id in gm.entities {
+		e := entity_get(e_id)
+		if e.pos == pos && e.z > cur_z {
+			result = e
+			cur_z = e.z
+			i += 1
+		}
+	}
+
+	if i > 0 {
+		return result, i
+	}
+
+	return {}, 0
+}
+
 /* Dijkstra Maps */
 
 DMap :: Grid(int)

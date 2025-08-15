@@ -1,5 +1,6 @@
 package main
 
+import "core:c"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
@@ -229,6 +230,7 @@ draw_entities :: proc(gm: GameMap) {
 
 draw_stats :: proc() {
 	mob_player := entity_get_comp(PLAYER_ID, Mobile)
+	text_size: f32 = TILE_SIZE * 5 / 7
 	text := rl.TextFormat(
 		"ST: %d HD: %d AG: %d WL: %d HP: %d/%d STAM: %d FTG: %d",
 		mob_player.stats[.ST],
@@ -240,7 +242,9 @@ draw_stats :: proc() {
 		mob_player.stamina,
 		mob_player.fatigue,
 	)
-	rl.DrawTextEx(_font, text, {0, 29 * 16}, TILE_SIZE * 5 / 7, 0, COLOR_UI_TEXT)
+	text_w := rl.MeasureTextEx(_font, text, text_size, 0)
+	rl.DrawRectangle(0, 29 * 16, c.int(text_w.x), c.int(text_w.y), rl.BLACK)
+	rl.DrawTextEx(_font, text, {0, 29 * 16}, text_size, 0, COLOR_UI_TEXT)
 }
 
 draw_combat_text :: proc(e: Entity, text: cstring) {
@@ -289,5 +293,57 @@ draw_item_menu :: proc() {
 			COLOR_UI_TEXT,
 		)
 	}
+}
 
+highlight :: proc(e_id: ObjId) {
+	e := entity_get(e_id)
+	s_pos := loc_to_screen(e.pos)
+	rect := rl.Rectangle{s_pos.x, s_pos.y, TILE_SIZE, TILE_SIZE}
+	rl.DrawRectangleLinesEx(rect, 2, COLOR_UI_TEXT)
+}
+
+screen_to_loc :: proc(scr_pos: rl.Vector2) -> Point {
+	world_pix_pos := rl.GetScreenToWorld2D(scr_pos, _cam)
+	return {int(world_pix_pos.x / TILE_SIZE), int(world_pix_pos.y / TILE_SIZE)}
+}
+
+get_world_mouse_pos :: proc() -> Point {
+	raw_mouse_pos := rl.GetMousePosition()
+	mouse_map_pos := screen_to_loc(raw_mouse_pos)
+	return mouse_map_pos
+}
+
+highlight_hover :: proc() {
+	mouse_map_pos := get_world_mouse_pos()
+	top_e, num_e := gamemap_get_entity_at(_cur_map, mouse_map_pos)
+	if num_e == 1 {
+		highlight(top_e.id)
+		tooltip(top_e.id)
+	}
+}
+
+tooltip :: proc(e_id: ObjId) {
+	text_size := f32(TILE_SIZE * 3 / 4)
+	border :: 1
+	padding := text_size / 2
+	e := entity_get(e_id)
+	s_pos := loc_to_screen(e.pos)
+	desc_m := rl.MeasureTextEx(_font, e.desc, text_size, 0)
+	rect := rl.Rectangle {
+		s_pos.x - border,
+		s_pos.y - border - (3 * text_size),
+		desc_m.x + border + padding,
+		(desc_m.y + border) * 3,
+	}
+	rl.DrawRectangleRec(rect, rl.BLACK)
+	rl.DrawRectangleLinesEx(rect, border, COLOR_UI_TEXT)
+	rl.DrawTextEx(_font, e.name, {rect.x + border, rect.y + border}, text_size, 0, COLOR_UI_TEXT)
+	rl.DrawTextEx(
+		_font,
+		e.desc,
+		{rect.x + border, rect.y + (text_size * 2) + border},
+		text_size,
+		0,
+		COLOR_UI_TEXT,
+	)
 }

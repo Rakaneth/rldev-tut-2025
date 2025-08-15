@@ -14,8 +14,13 @@
 					"label": ""
 				},
 				{
-					"line": 49,
+					"line": 50,
 					"column": 18,
+					"label": ""
+				},
+				{
+					"line": 335,
+					"column": 22,
 					"label": ""
 				}
 			]
@@ -69,7 +74,7 @@
 			"path": "src/ui.odin",
 			"bookmarks": [
 				{
-					"line": 7,
+					"line": 8,
 					"column": 12,
 					"label": ""
 				}
