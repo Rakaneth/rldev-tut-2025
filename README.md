@@ -233,3 +233,5 @@ Tweaked the inventory UI and fully implemented the Potion of Healing. Also impro
 
 More UI work - adding tooltips and targeting.
 
+https://github.com/user-attachments/assets/955558b3-ea9e-4324-909a-447add8e6f95
+
