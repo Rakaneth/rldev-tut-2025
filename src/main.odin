@@ -24,6 +24,7 @@ DMAP_SENTINEL :: 9999
 
 GameState :: enum {
 	Input,
+	Item,
 	Move,
 	Damage,
 }
@@ -44,6 +45,7 @@ _dungeon_music: rl.Music
 _dam_timer: f32
 _font: rl.Font
 _font_atlas: rl.Texture2D
+_damage := false
 
 /* Game Lifecycle */
 
@@ -95,6 +97,7 @@ init :: proc() {
 	rl.InitWindow(SCR_W, SCR_H, TITLE)
 	rl.SetTargetFPS(FPS)
 	rl.InitAudioDevice()
+	rl.SetExitKey(rl.KeyboardKey.KEY_NULL)
 
 	atlas_data := #load("../assets/gfx/lovable-rogue-cut.png")
 	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data), c.int(len(atlas_data)))
@@ -107,6 +110,7 @@ init :: proc() {
 	rl.UnloadImage(font_img)
 
 	build_font()
+	rl.GuiSetFont(_font)
 
 	swing_sound_data := #load("../assets/sfx/swing.wav")
 	swing_sound_wav := rl.LoadWaveFromMemory(
@@ -131,7 +135,7 @@ init :: proc() {
 	first_floor := map_make_roomer(40, 30, 5)
 	_cur_map = gamemap_create(first_floor)
 	spawn(Mobile_ID.Hero, true)
-	spawn(Mobile_ID.Bat)
+	// spawn(Mobile_ID.Bat)
 	spawn(Consumable_ID.Potion_Healing)
 	spawn(Consumable_ID.Scroll_Lightning)
 
@@ -147,13 +151,24 @@ get_player_mut :: proc() -> ^Entity {
 	return entity_get_mut(PLAYER_ID)
 }
 
+item_try_use :: proc(user: ObjId, idx: int) -> bool {
+	user_e, mob_ok := entity_get_comp(user, Mobile)
+	if len(user_e.inventory.items) > idx && mob_ok {
+		mobile_use_consumable(user, user_e.inventory.items[idx])
+		return true
+	}
+
+	return false
+}
+
 //Should return false to stop the game
 update :: proc() -> bool {
 	dt := rl.GetFrameTime()
 	moved: MoveResult = .NoMove
 	player := get_player()
 
-	switch _state {
+
+	#partial switch _state {
 	case .Input:
 		switch {
 		case rl.WindowShouldClose():
@@ -174,14 +189,51 @@ update :: proc() -> bool {
 				}
 			}
 		case rl.IsKeyPressed(.SPACE):
-			first_item := player.inventory.items[0]
-			entity_drop_item(PLAYER_ID, first_item)
+			if len(player.inventory.items) > 0 {
+				first_item := player.inventory.items[0]
+				entity_drop_item(PLAYER_ID, first_item)
+			}
+		case rl.IsKeyPressed(.I):
+			_state = .Item
+		case rl.IsKeyPressed(.ESCAPE):
+			return false
 		}
 
 		#partial switch moved {
-		case .Moved:
+		case .Moved, .Bump:
 			_state = .Move
 		}
+
+	case .Item:
+		to_use := -1
+		switch {
+		case rl.IsKeyPressed(.ESCAPE):
+			_state = .Input
+		case rl.IsKeyPressed(.KP_1):
+			to_use = 0
+		case rl.IsKeyPressed(.KP_2):
+			to_use = 1
+		case rl.IsKeyPressed(.KP_3):
+			to_use = 2
+		case rl.IsKeyPressed(.KP_4):
+			to_use = 3
+		case rl.IsKeyPressed(.KP_5):
+			to_use = 4
+		case rl.IsKeyPressed(.KP_6):
+			to_use = 5
+		case rl.IsKeyPressed(.KP_7):
+			to_use = 6
+		case rl.IsKeyPressed(.KP_8):
+			to_use = 7
+		}
+
+		if to_use > -1 {
+			used := item_try_use(PLAYER_ID, to_use)
+			if used {
+				_state = .Input
+			}
+		}
+
 	case .Move:
 		mobile_update_fov(PLAYER_ID)
 		gamemap_dmap_update(&_cur_map, get_player().pos)
@@ -191,10 +243,14 @@ update :: proc() -> bool {
 			if e_mob, e_mob_ok := entity_get_comp(e_id, Mobile); e_mob_ok && e_id != PLAYER_ID {
 				mob_move_dir := dmap_get_next_step(_cur_map.enemy_dmap, e_mob.pos)
 				e_moved = entity_move_by(e_id, mob_move_dir)
-				if e_moved == .Bump do _state = .Damage
 			}
 		}
-		if !damage_step do _state = .Input
+		if _damage {
+			_damage = false
+			_state = .Damage
+		} else {
+			_state = .Input
+		}
 	case .Damage:
 		_dam_timer -= dt
 		if _dam_timer <= 0 {
@@ -219,6 +275,9 @@ draw :: proc() {
 	//draw_tile(.Hero, _hero_screen_pos.x, _hero_screen_pos.y, rl.BEIGE)
 	draw_entities(_cur_map)
 	draw_stats()
+	if _state == .Item {
+		draw_item_menu()
+	}
 	rl.EndMode2D()
 	when ODIN_DEBUG {rl.DrawFPS(0, 0)}
 	rl.EndDrawing()
@@ -295,5 +354,6 @@ main :: proc() {
 		rl.UpdateMusicStream(_dungeon_music)
 		running = update()
 		draw()
+		free_all(context.temp_allocator)
 	}
 }

@@ -56,7 +56,7 @@ is_exhausted :: proc(mob: Mobile) -> bool {
 mob_take_damage :: proc(e_mob: ^Mobile, dmg: int) {
 	e_mob.damage = dmg
 	e_mob.cur_hp -= dmg
-	_state = .Damage
+	_damage = true
 }
 
 mob_heal :: proc(e_mob: ^Mobile, amt: int) {

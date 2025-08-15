@@ -260,6 +260,9 @@ mobile_use_consumable :: proc(user: ObjId, consumable: ObjId) {
 		if cons_entity.uses < 1 {
 			entity_inv_remove_item(user, consumable)
 		}
+		when ODIN_DEBUG {
+			log.infof("%v uses %v", user_entity.name, cons_entity.name)
+		}
 	}
 }
 

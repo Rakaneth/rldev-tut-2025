@@ -2,6 +2,7 @@ package main
 
 import "core:slice"
 import "core:strconv"
+import "core:strings"
 import rl "vendor:raylib"
 
 /* swatch */
@@ -9,6 +10,7 @@ STONE_LIGHT: rl.Color : {192, 192, 192, 255}
 STONE_DARK: rl.Color : {96, 96, 96, 255}
 STAIRS: rl.Color : {192, 192, 0, 255}
 WOOD: rl.Color : {192, 101, 96, 255}
+ITEM_LIST_Y :: 80
 
 Atlas_Tile :: enum {
 	Hero,
@@ -242,4 +244,27 @@ draw_combat_text :: proc(e: Entity, text: cstring) {
 	pix_pos := loc_to_screen(e.pos)
 	//rl.DrawText(text, i32(pix_pos.x), i32(pix_pos.y), TILE_SIZE / 2, rl.WHITE)
 	rl.DrawTextEx(_font, text, {pix_pos.x, pix_pos.y}, TILE_SIZE / 2, 0, rl.WHITE)
+}
+
+
+draw_item_menu :: proc() {
+	item_ids := get_player().inventory.items
+
+	if len(item_ids) > 0 {
+		for item_id, i in item_ids {
+			item := entity_get_comp(item_id, Consumable)
+			txt := rl.TextFormat("%d: %s x%d", i + 1, item.name, item.uses)
+			rl.DrawTextEx(
+				_font,
+				txt,
+				{0, f32(ITEM_LIST_Y + i * TILE_SIZE / 2)},
+				TILE_SIZE / 2,
+				0,
+				rl.BLUE,
+			)
+		}
+	} else {
+		rl.DrawTextEx(_font, "No items in backpack", {0, ITEM_LIST_Y}, TILE_SIZE / 2, 0, rl.BLUE)
+	}
+
 }
