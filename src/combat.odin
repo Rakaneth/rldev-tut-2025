@@ -53,14 +53,26 @@ is_exhausted :: proc(mob: Mobile) -> bool {
 	return mob.stamina <= mob.fatigue
 }
 
-mob_take_damage :: proc(e_mob: ^Mobile, dmg: int) {
+//Sets global: _damage
+mob_take_damage :: proc(e_mob: EntityInstMut(Mobile), dmg: int) {
 	e_mob.damage = dmg
 	e_mob.cur_hp -= dmg
+	when ODIN_DEBUG {
+		log.infof("[SYSTEM] %v takes %v damage", e_mob.name, dmg)
+	}
 	_damage = true
 }
 
-mob_heal :: proc(e_mob: ^Mobile, amt: int) {
+//Returns the real amount healed for messaging/debugging
+mob_heal :: proc(e_mob: EntityInstMut(Mobile), amt: int) -> int {
+	old_hp := e_mob.cur_hp
 	e_mob.cur_hp = min(e_mob.max_hp, e_mob.cur_hp + amt)
+	real_healed := e_mob.cur_hp - old_hp
+	when ODIN_DEBUG {
+		log.infof("[SYSTEM] %v healed for %v (real %v)", e_mob.name, amt, real_healed)
+	}
+	return real_healed
+
 }
 
 basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
@@ -78,7 +90,7 @@ basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 
 		when ODIN_DEBUG {
 			log.infof(
-				"COMBAT: %v hits %v with a roll of %v (test %v of %v); %v damage",
+				"[SYSTEM] %v hits %v with a roll of %v (test %v of %v); %v base damage",
 				attacker.name,
 				defender.name,
 				att_roll,
@@ -90,10 +102,10 @@ basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 
 		if dragon {
 			att_stam_cost = 0
-			mob_take_damage(defender.type, dmg)
+			mob_take_damage(defender, dmg)
 			when ODIN_DEBUG {
 				log.infof(
-					"COMBAT: %v rolls a DRAGON on attack! No stam cost, no dodging",
+					"[SYSTEM] %v rolls a DRAGON on attack! No stam cost, no dodging",
 					attacker.name,
 				)
 				log.infof("COMBAT: %v takes %v damage", defender.name, dmg)
@@ -107,10 +119,10 @@ basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 				log.infof("COMBAT: %v dodges, gaining %v fatigue", defender.name, dmg)
 			}
 		} else {
-			mob_take_damage(defender.type, dmg)
 			when ODIN_DEBUG {
-				log.infof("COMBAT: %v fails to dodge, taking %v damage", defender.name, dmg)
+				log.infof("COMBAT: %v fails to dodge", defender.name)
 			}
+			mob_take_damage(defender, dmg)
 		}
 	} else {
 		demon := att_roll == 20
