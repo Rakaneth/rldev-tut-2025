@@ -46,7 +46,9 @@ _dam_timer: f32
 _font: rl.Font
 _font_atlas: rl.Texture2D
 _damage := false
-_target: ObjId
+_target: union {
+	ObjId,
+}
 
 /* Game Lifecycle */
 
@@ -284,6 +286,9 @@ draw :: proc() {
 	//draw_tile(.Hero, _hero_screen_pos.x, _hero_screen_pos.y, rl.BEIGE)
 	draw_entities(_cur_map)
 	highlight_hover()
+	if _target != nil {
+		highlight(_target.?, COLOR_TARGET)
+	}
 	draw_stats()
 	if _state == .Item {
 		draw_item_menu()

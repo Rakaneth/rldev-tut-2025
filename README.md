@@ -228,3 +228,8 @@ Added basic inventory and monster movement. Currently working on consumable uses
 ### 2025-08-14
 
 Tweaked the inventory UI and fully implemented the Potion of Healing. Also improved the modularity of debugging messages.
+
+### 2025-08-15
+
+More UI work - adding tooltips and targeting.
+

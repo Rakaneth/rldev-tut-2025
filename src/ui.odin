@@ -12,6 +12,7 @@ COLOR_STONE_DARK: rl.Color : {96, 96, 96, 255}
 COLOR_STAIRS: rl.Color : {192, 192, 0, 255}
 COLOR_WOOD: rl.Color : {192, 101, 96, 255}
 COLOR_UI_TEXT: rl.Color = {192, 192, 0, 255}
+COLOR_TARGET: rl.Color = {192, 0, 0, 255}
 
 /* other UI constants */
 ITEM_LIST_Y :: 80
@@ -244,7 +245,19 @@ draw_stats :: proc() {
 	)
 	text_w := rl.MeasureTextEx(_font, text, text_size, 0)
 	rl.DrawRectangle(0, 29 * 16, c.int(text_w.x), c.int(text_w.y), rl.BLACK)
-	rl.DrawTextEx(_font, text, {0, 29 * 16}, text_size, 0, COLOR_UI_TEXT)
+	rl.DrawTextEx(_font, text, {0, 29 * TILE_SIZE}, text_size, 0, COLOR_UI_TEXT)
+	if _target != nil {
+		targ := entity_get(_target.?)
+		targ_text := rl.TextFormat("Target: %s [%d,%d]", targ.name, targ.pos.x, targ.pos.y)
+		rl.DrawTextEx(
+			_font,
+			targ_text,
+			{0, 29 * TILE_SIZE - text_size},
+			text_size,
+			0,
+			COLOR_UI_TEXT,
+		)
+	}
 }
 
 draw_combat_text :: proc(e: Entity, text: cstring) {
@@ -295,11 +308,11 @@ draw_item_menu :: proc() {
 	}
 }
 
-highlight :: proc(e_id: ObjId) {
+highlight :: proc(e_id: ObjId, color: rl.Color) {
 	e := entity_get(e_id)
 	s_pos := loc_to_screen(e.pos)
 	rect := rl.Rectangle{s_pos.x, s_pos.y, TILE_SIZE, TILE_SIZE}
-	rl.DrawRectangleLinesEx(rect, 2, COLOR_UI_TEXT)
+	rl.DrawRectangleLinesEx(rect, 1, color)
 }
 
 screen_to_loc :: proc(scr_pos: rl.Vector2) -> Point {
@@ -317,7 +330,7 @@ highlight_hover :: proc() {
 	mouse_map_pos := get_world_mouse_pos()
 	top_e, num_e := gamemap_get_entity_at(_cur_map, mouse_map_pos)
 	if num_e == 1 {
-		highlight(top_e.id)
+		highlight(top_e.id, COLOR_UI_TEXT)
 		tooltip(top_e.id)
 	}
 }
