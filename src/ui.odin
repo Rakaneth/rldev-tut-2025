@@ -365,8 +365,6 @@ tooltip :: proc(e_id: ObjId) {
 draw_last_msg :: proc() {
 	if queue.len(_msg_queue) > 0 {
 		msg := queue.front(&_msg_queue)
-		msg_dims := rl.MeasureTextEx(_font, msg, TILE_SIZE, 0)
-		rl.DrawRectangle(0, 0, c.int(msg_dims.x) + 2, c.int(msg_dims.y) + 2, rl.BLACK)
 		rl.DrawTextEx(_font, msg, {1, 1}, TILE_SIZE, 0, COLOR_UI_TEXT)
 	}
 }
