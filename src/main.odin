@@ -1,9 +1,11 @@
 package main
 
 import "core:c"
+import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:mem"
+import "core:strings"
 import rl "vendor:raylib"
 
 /* Game Constants */
@@ -21,12 +23,14 @@ LERP_SNAP_THRESHOLD :: 0.01
 DAMAGE_TIMER :: 0.3
 FONT_NUM_GLYPHS :: 73
 DMAP_SENTINEL :: 9999
+MSG_BUFFER_LEN :: 50
 
 GameState :: enum {
 	Input,
 	Item,
 	Move,
 	Damage,
+	Messages,
 }
 
 /* Game Globals */
@@ -41,6 +45,7 @@ _hero_loc: Point
 _state: GameState
 _cur_map: GameMap
 _swing_sound: rl.Sound
+_magic_sound: rl.Sound
 _dungeon_music: rl.Music
 _dam_timer: f32
 _font: rl.Font
@@ -49,6 +54,8 @@ _damage := false
 _target: union {
 	ObjId,
 }
+_msg_queue_data: [MSG_BUFFER_LEN]cstring
+_msg_queue: queue.Queue(cstring)
 
 /* Game Lifecycle */
 
@@ -121,7 +128,14 @@ init :: proc() {
 		c.int(len(swing_sound_data)),
 	)
 	_swing_sound = rl.LoadSoundFromWave(swing_sound_wav)
-	// _swing_sound = rl.LoadSound("./swing.wav")
+
+	magic_sound_data := #load("../assets/sfx/magic1.wav")
+	magic_sound_wav := rl.LoadWaveFromMemory(
+		".wav",
+		raw_data(magic_sound_data),
+		c.int(len(magic_sound_data)),
+	)
+	_magic_sound = rl.LoadSoundFromWave(magic_sound_wav)
 
 	dungeon_mus_data := #load("../assets/sfx/dungeon.xm")
 	_dungeon_music = rl.LoadMusicStreamFromMemory(
@@ -130,7 +144,6 @@ init :: proc() {
 		c.int(len(dungeon_mus_data)),
 	)
 	rl.SetMusicVolume(_dungeon_music, 0.3)
-	// _dungeon_music = rl.LoadMusicStream("./dungeon.xm")
 
 	// first_floor := map_make_recursive(39, 29, 1)
 	// first_floor := map_make_arena(21, 21)
@@ -140,6 +153,8 @@ init :: proc() {
 	spawn(Mobile_ID.Bat)
 	spawn(Consumable_ID.Potion_Healing)
 	spawn(Consumable_ID.Scroll_Lightning)
+
+	queue.init_from_slice(&_msg_queue, _msg_queue_data[:])
 
 	_dam_timer = DAMAGE_TIMER
 	mobile_update_fov(PLAYER_ID)
@@ -192,11 +207,8 @@ update :: proc() -> bool {
 					moved = .Moved
 				}
 			}
-		case rl.IsKeyPressed(.SPACE):
-			if len(player.inventory.items) > 0 {
-				first_item := player.inventory.items[0]
-				entity_drop_item(PLAYER_ID, first_item)
-			}
+		case rl.IsKeyPressed(.H):
+			_state = .Messages
 		case rl.IsKeyPressed(.I):
 			_state = .Item
 		case rl.IsMouseButtonPressed(rl.MouseButton.LEFT):
@@ -277,6 +289,10 @@ update :: proc() -> bool {
 			}
 			_state = .Input
 		}
+	case .Messages:
+		if rl.IsKeyPressed(.ESCAPE) {
+			_state = .Input
+		}
 	}
 
 	if _target != nil && !is_visible_to_player(_target.?) {
@@ -290,16 +306,21 @@ draw :: proc() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
 	rl.BeginMode2D(_cam)
-	draw_map(_cur_map)
-	//draw_tile(.Hero, _hero_screen_pos.x, _hero_screen_pos.y, rl.BEIGE)
-	draw_entities(_cur_map)
-	highlight_hover()
-	if _target != nil {
-		highlight(_target.?, COLOR_TARGET)
-	}
-	draw_stats()
-	if _state == .Item {
-		draw_item_menu()
+	#partial switch _state {
+	case .Input, .Item, .Move, .Damage:
+		draw_map(_cur_map)
+		draw_entities(_cur_map)
+		highlight_hover()
+		if _target != nil {
+			highlight(_target.?, COLOR_TARGET)
+		}
+		draw_stats()
+		if _state == .Item {
+			draw_item_menu()
+		}
+		draw_last_msg()
+	case .Messages:
+		draw_messages()
 	}
 	rl.EndMode2D()
 	when ODIN_DEBUG {rl.DrawFPS(0, 0)}
@@ -314,12 +335,15 @@ shutdown :: proc() {
 	delete(_entity_store)
 	rl.UnloadMusicStream(_dungeon_music)
 	rl.UnloadSound(_swing_sound)
+	rl.UnloadSound(_magic_sound)
 	rl.CloseAudioDevice()
 	rl.UnloadTexture(_atlas_texture)
-	// rl.UnloadFontData(_font.glyphs, FONT_NUM_GLYPHS)
-	// rl.UnloadFont(_font)
 	free(_font.glyphs)
 	free(_font.recs)
+	for msg in _msg_queue_data {
+		delete(msg)
+	}
+	queue.destroy(&_msg_queue)
 	rl.UnloadTexture(_font_atlas)
 	rl.CloseWindow()
 }
@@ -401,6 +425,22 @@ entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: i
 
 	return
 }
+
+/* Messaging */
+
+//ALLOCATES a new cstring, uses `rl.TextFormat` under the hood
+add_msg :: proc(msg: cstring, args: ..any) {
+	formatted := strings.clone_from_cstring(rl.TextFormat(msg, args))
+
+	if queue.len(_msg_queue) >= MSG_BUFFER_LEN {
+		to_delete := queue.pop_back(&_msg_queue)
+		delete(to_delete)
+	}
+	queue.push_front(&_msg_queue, strings.clone_to_cstring(formatted))
+	delete(formatted)
+}
+
+/* Main */
 
 main :: proc() {
 

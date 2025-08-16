@@ -1,6 +1,7 @@
 package main
 
 import "core:c"
+import "core:container/queue"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
@@ -359,4 +360,26 @@ tooltip :: proc(e_id: ObjId) {
 		0,
 		COLOR_UI_TEXT,
 	)
+}
+
+draw_last_msg :: proc() {
+	if queue.len(_msg_queue) > 0 {
+		msg := queue.front(&_msg_queue)
+		msg_dims := rl.MeasureTextEx(_font, msg, TILE_SIZE, 0)
+		rl.DrawRectangle(0, 0, c.int(msg_dims.x) + 2, c.int(msg_dims.y) + 2, rl.BLACK)
+		rl.DrawTextEx(_font, msg, {1, 1}, TILE_SIZE, 0, COLOR_UI_TEXT)
+	}
+}
+
+draw_messages :: proc() {
+	rect := rl.Rectangle{0, 0, WORLD_PIX_W, WORLD_PIX_H}
+	font_size := f32(TILE_SIZE / 2)
+	rl.DrawRectangleRec(rect, rl.BLACK)
+	rl.DrawRectangleLinesEx(rect, 2, COLOR_UI_TEXT)
+	msg_q_len := queue.len(_msg_queue)
+	for i in 0 ..< msg_q_len {
+		idx := (uint(i) + _msg_queue.offset) % uint(msg_q_len)
+		msg := _msg_queue_data[idx]
+		rl.DrawTextEx(_font, msg, {2, f32(i) * font_size + 2}, font_size, 0, COLOR_UI_TEXT)
+	}
 }
