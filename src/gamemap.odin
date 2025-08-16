@@ -336,9 +336,9 @@ map_make_roomer :: proc(
 			s := point_by_dir(pos, .Down)
 			e := point_by_dir(pos, .Right)
 			w := point_by_dir(pos, .Left)
+			neis := [4]Point{n, s, e, w}
 
 			if grid_get(m, pos) == Terrain.Floor {
-				neis := [4]Point{n, s, e, w}
 				for nei in neis {
 					if grid_get(m, nei) == Terrain.NullTile {
 						grid_set(&m, nei, Terrain.Wall)

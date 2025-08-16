@@ -162,7 +162,9 @@ entity_move_by :: proc(e_id: ObjId, dir: Direction) -> MoveResult {
 }
 
 mobile_update_fov :: proc(e_id: ObjId) {
-	mob := entity_get_comp_mut(e_id, Mobile)
+	mob, mob_ok := entity_get_comp_mut(e_id, Mobile)
+	if !mob_ok do return
+
 	grid_fill(&mob.visible, false)
 
 	for deg in 0 ..< 360 {
@@ -195,10 +197,25 @@ is_visible :: proc(looker_id: ObjId, subject_id: ObjId) -> bool {
 	return grid_get(looker_mob.visible, subj_pos)
 }
 
-is_visible_to_player :: proc(pos: Point) -> bool {
+is_visible_to_player_pos :: proc(pos: Point) -> bool {
 	mob := entity_get_comp(PLAYER_ID, Mobile)
 	return grid_get(mob.visible, pos)
 }
+
+is_visible_to_player_id :: proc(e_id: ObjId) -> bool {
+	e := entity_get(e_id)
+	if e_id not_in _entity_store do return false
+	if _, found := slice_find(_cur_map.entities[:], e_id); !found {
+		return false
+	}
+	return is_visible_to_player_pos(e.pos)
+}
+
+is_visible_to_player :: proc {
+	is_visible_to_player_pos,
+	is_visible_to_player_id,
+}
+
 
 entity_pick_up_item :: proc(grabber: ObjId, grabbed: ObjId) {
 	grabber_entity := entity_get_mut(grabber)
@@ -259,6 +276,15 @@ mobile_use_consumable :: proc(user: ObjId, consumable: ObjId) {
 			mobile_gain_stat(user, .AG)
 		case Consumable_ID.Potion_WL:
 			mobile_gain_stat(user, .WL)
+		case Consumable_ID.Scroll_Lightning:
+			if user == PLAYER_ID && _target == nil {
+				when ODIN_DEBUG {
+					log.infof("No target selected for lightning bolt")
+				}
+				return
+			} else if user == PLAYER_ID {
+				system_cast_lb(user_entity, entity_get_comp_mut(_target.?, Mobile))
+			}
 		}
 		cons_entity.uses -= 1
 		if cons_entity.uses < 1 {

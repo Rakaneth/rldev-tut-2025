@@ -150,3 +150,67 @@ system_update_vitals :: proc(gainer: EntityInstMut(Mobile)) {
 	gainer.max_hp = gainer.base_hp + gainer.stats[.HD] * 2
 	gainer.stamina = gainer.stats[.HD] + gainer.stats[.WL]
 }
+
+system_cast_lb :: proc(caster, target: EntityInstMut(Mobile)) {
+	cast_roll, cast_ok := system_stat_test(caster.type^, .WL)
+	demon := cast_roll == 20
+	dragon := cast_roll == 1
+	dmg: int
+	switch {
+	case demon:
+		when ODIN_DEBUG {
+			log.infof("[SYSTEM] %v MISCASTS lightning bolt at %v!", caster.name, target.name)
+		}
+		dmg = system_roll_dice(6, 2)
+		system_mob_take_damage(caster, dmg)
+	case dragon:
+		when ODIN_DEBUG {
+			log.infof(
+				"[SYSTEM] %v casts lightning bolt flawlessly! No save for %v",
+				caster.name,
+				target.name,
+			)
+		}
+		dmg = system_roll_dice(6, 4)
+		system_mob_take_damage(target, dmg)
+	case cast_ok:
+		when ODIN_DEBUG {
+			log.infof("[SYSTEM] %v casts lightning bolt! at %v!", caster.name, target.name)
+		}
+		dmg = system_roll_dice(6, 3)
+		if save_roll, saved := system_stat_test(target.type^, .AG); saved {
+			when ODIN_DEBUG {
+				log.infof("[SYSTEM] %v saves against the lightning bolt!", target.name)
+			}
+			system_mob_take_damage(target, dmg / 2)
+		} else {
+			when ODIN_DEBUG {
+				log.infof(
+					"[SYSTEM] %v fails the AG test to save against lightning bolt",
+					target.name,
+				)
+			}
+			system_mob_take_damage(target, dmg)
+		}
+	case:
+		when ODIN_DEBUG {
+			log.infof("[SYSTEM] %v fumbles the lightning bolt spell", caster.name)
+		}
+		dmg = system_roll_dice(6, 2)
+		if save_roll, saved := system_stat_test(target.type^, .AG); saved {
+			when ODIN_DEBUG {
+				log.infof("[SYSTEM] %v saves against the lightning bolt!", target.name)
+			}
+			system_mob_take_damage(target, dmg / 2)
+		} else {
+			when ODIN_DEBUG {
+				log.infof(
+					"[SYSTEM] %v fails the AG test to save against lightning bolt",
+					target.name,
+				)
+			}
+			system_mob_take_damage(target, dmg)
+		}
+	}
+	caster.fatigue += 3
+}

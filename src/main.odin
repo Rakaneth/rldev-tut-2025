@@ -189,6 +189,7 @@ update :: proc() -> bool {
 				item := entity_get(e_id)
 				if e_id != PLAYER_ID && item.pos == player.pos {
 					entity_pick_up_item(PLAYER_ID, e_id)
+					moved = .Moved
 				}
 			}
 		case rl.IsKeyPressed(.SPACE):
@@ -240,7 +241,7 @@ update :: proc() -> bool {
 		if to_use > -1 {
 			used := item_try_use(PLAYER_ID, to_use)
 			if used {
-				_state = .Input
+				_state = .Move
 			}
 		}
 
@@ -251,8 +252,11 @@ update :: proc() -> bool {
 		damage_step := false
 		for e_id in _cur_map.entities {
 			if e_mob, e_mob_ok := entity_get_comp(e_id, Mobile); e_mob_ok && e_id != PLAYER_ID {
-				mob_move_dir := dmap_get_next_step(_cur_map.enemy_dmap, e_mob.pos)
-				e_moved = entity_move_by(e_id, mob_move_dir)
+				mobile_update_fov(e_id)
+				if is_visible(e_id, PLAYER_ID) {
+					mob_move_dir := dmap_get_next_step(_cur_map.enemy_dmap, e_mob.pos)
+					e_moved = entity_move_by(e_id, mob_move_dir)
+				}
 			}
 		}
 		if _damage {
@@ -273,6 +277,10 @@ update :: proc() -> bool {
 			}
 			_state = .Input
 		}
+	}
+
+	if _target != nil && !is_visible_to_player(_target.?) {
+		_target = nil
 	}
 
 	return true

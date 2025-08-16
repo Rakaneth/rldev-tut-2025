@@ -188,7 +188,7 @@ factory_make_consumable :: proc(cons_id: Consumable_ID) -> Entity {
 		template.name,
 		template.desc,
 		template.tile,
-		Consumable{uses = template.uses},
+		Consumable{uses = template.uses, consumable_id = cons_id},
 		template.color,
 	)
 
