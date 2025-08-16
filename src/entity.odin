@@ -20,18 +20,19 @@ Stat :: enum {
 Attack :: distinct [2]int
 
 Mobile :: struct {
-	energy:   int,
-	cur_hp:   int,
-	max_hp:   int,
-	visible:  Grid(bool),
-	vision:   int,
-	damage:   int,
-	stats:    [Stat]int,
-	stamina:  int,
-	fatigue:  int,
-	base_atk: Attack,
-	atk_stat: Stat,
-	base_hp:  int,
+	energy:    int,
+	cur_hp:    int,
+	max_hp:    int,
+	visible:   Grid(bool),
+	vision:    int,
+	damage:    int,
+	stats:     [Stat]int,
+	stamina:   int,
+	fatigue:   int,
+	base_atk:  Attack,
+	atk_stat:  Stat,
+	base_hp:   int,
+	mobile_id: Mobile_ID,
 }
 
 Consumable :: struct {

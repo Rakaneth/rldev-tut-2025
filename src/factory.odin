@@ -167,6 +167,7 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 			base_atk = template.base_atk,
 			atk_stat = template.atk_stat,
 			base_hp = template.hp,
+			mobile_id = mob_id,
 		},
 		template.color,
 		z,
