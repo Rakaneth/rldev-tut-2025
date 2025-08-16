@@ -16,7 +16,7 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 * [x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
 * [x] Week 3 - Field of View, Placing Enemies and Kicking Them
 * [x] Week 4 - Doing and Taking Damage, Interface
-* [ ] Week 5 - **Items and Invventory, Ranged Scrolls and Targeting**
+* [ ] Week 5 - **Items and Inventory, Ranged Scrolls and Targeting**
 * [ ] Week 6 - Saving and Loading, Delving into the Dungeon
 * [ ] Week 7 - Increasing Difficulty, Gearing Up
 * [ ] Week 8 - Conclusion
@@ -234,4 +234,8 @@ Tweaked the inventory UI and fully implemented the Potion of Healing. Also impro
 More UI work - adding tooltips and targeting.
 
 https://github.com/user-attachments/assets/955558b3-ea9e-4324-909a-447add8e6f95
+
+### 2025-08-16
+
+The messaging system is in. The last message produced by the game is displayed on top. The player can press `h` to view the last 50 (number subject to change) messages.
 
