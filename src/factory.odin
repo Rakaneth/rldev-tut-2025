@@ -7,10 +7,11 @@ import rl "vendor:raylib"
 _cur_id: ObjId = 1
 
 BP_Base :: struct {
-	name:  string,
-	desc:  string,
-	tile:  Atlas_Tile,
-	color: rl.Color,
+	name:      string,
+	desc:      string,
+	tile:      Atlas_Tile,
+	color:     rl.Color,
+	inventory: int,
 }
 
 BP_Mobile :: struct {
@@ -38,6 +39,10 @@ Mobile_ID :: enum {
 Consumable_ID :: enum {
 	Potion_Healing,
 	Scroll_Lightning,
+	Potion_ST,
+	Potion_HD,
+	Potion_AG,
+	Potion_WL,
 }
 
 @(rodata)
@@ -47,6 +52,7 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		desc = "The Hero!",
 		tile = .Hero,
 		color = rl.WHITE,
+		inventory = 8,
 		hp = 10,
 		vision = 6,
 		st = {10, 10},
@@ -87,6 +93,34 @@ CONSUMABLES := [Consumable_ID]BP_Consumable {
 		color = rl.YELLOW,
 		uses = 1,
 	},
+	.Potion_ST = {
+		name = "Potion of Strength",
+		desc = "A mysterious brew. Smells like a gymnasium.",
+		tile = .Potion,
+		color = rl.ORANGE,
+		uses = 1,
+	},
+	.Potion_HD = {
+		name = "Potion of Hardiness",
+		desc = "A mysterious brew. Powdered crystals float in the mixture.",
+		tile = .Potion,
+		color = rl.DARKBROWN,
+		uses = 1,
+	},
+	.Potion_AG = {
+		name = "Potion of Agility",
+		desc = "A mysterious brew. Smells like a fresh breeze.",
+		tile = .Potion,
+		color = rl.GREEN,
+		uses = 1,
+	},
+	.Potion_WL = {
+		name = "Potion of Will",
+		desc = "A mysterious brew. Smells like a burning candle.",
+		tile = .Potion,
+		color = rl.YELLOW,
+		uses = 1,
+	},
 }
 
 factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
@@ -110,7 +144,7 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 
 	if is_player {
 		new_stats: [4]int
-		roll_fallen_hero_stats(new_stats[:])
+		system_roll_fallen_hero_stats(new_stats[:])
 		st = new_stats[0]
 		hd = new_stats[1]
 		ag = new_stats[2]
@@ -132,11 +166,14 @@ factory_make_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> Entity {
 			stats = {.ST = st, .HD = hd, .AG = ag, .WL = wl},
 			base_atk = template.base_atk,
 			atk_stat = template.atk_stat,
+			base_hp = template.hp,
+			mobile_id = mob_id,
 		},
 		template.color,
 		z,
 	)
 
+	e.inventory.capacity = template.inventory
 	when ODIN_DEBUG {
 		log.infof("%v", e)
 	}
@@ -152,7 +189,7 @@ factory_make_consumable :: proc(cons_id: Consumable_ID) -> Entity {
 		template.name,
 		template.desc,
 		template.tile,
-		Consumable{uses = template.uses},
+		Consumable{uses = template.uses, consumable_id = cons_id},
 		template.color,
 	)
 

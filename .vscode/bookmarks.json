@@ -4,18 +4,33 @@
 			"path": "src/main.odin",
 			"bookmarks": [
 				{
-					"line": 8,
+					"line": 10,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 29,
+					"line": 35,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 46,
+					"line": 59,
 					"column": 18,
+					"label": ""
+				},
+				{
+					"line": 372,
+					"column": 22,
+					"label": ""
+				},
+				{
+					"line": 428,
+					"column": 15,
+					"label": ""
+				},
+				{
+					"line": 442,
+					"column": 0,
 					"label": ""
 				}
 			]
@@ -51,6 +66,26 @@
 				{
 					"line": 353,
 					"column": 28,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/combat.odin",
+			"bookmarks": [
+				{
+					"line": 5,
+					"column": 17,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/ui.odin",
+			"bookmarks": [
+				{
+					"line": 9,
+					"column": 12,
 					"label": ""
 				}
 			]

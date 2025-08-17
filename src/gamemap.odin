@@ -336,9 +336,9 @@ map_make_roomer :: proc(
 			s := point_by_dir(pos, .Down)
 			e := point_by_dir(pos, .Right)
 			w := point_by_dir(pos, .Left)
+			neis := [4]Point{n, s, e, w}
 
 			if grid_get(m, pos) == Terrain.Floor {
-				neis := [4]Point{n, s, e, w}
 				for nei in neis {
 					if grid_get(m, nei) == Terrain.NullTile {
 						grid_set(&m, nei, Terrain.Wall)
@@ -357,6 +357,7 @@ GameMap :: struct {
 	using terrain: TerrainData,
 	entities:      [dynamic]ObjId,
 	explored:      Grid(bool),
+	enemy_dmap:    Grid(int),
 }
 
 gamemap_create :: proc(
@@ -364,16 +365,20 @@ gamemap_create :: proc(
 	allocator := context.allocator,
 	loc := #caller_location,
 ) -> GameMap {
+	dmap := grid_create(m.width, m.height, int)
+	grid_fill(&dmap, DMAP_SENTINEL)
 	return {
 		terrain = m,
 		entities = make([dynamic]ObjId, allocator, loc),
 		explored = grid_create(m.width, m.height, bool),
+		enemy_dmap = dmap,
 	}
 }
 
 gamemap_destroy :: proc(gm: ^GameMap) {
 	grid_destroy(&gm.terrain)
 	grid_destroy(&gm.explored)
+	grid_destroy(&gm.enemy_dmap)
 	delete(gm.entities)
 }
 
@@ -385,8 +390,21 @@ gamemap_add_entity :: proc(gm: ^GameMap, e: Entity) {
 	append(&gm.entities, e.id)
 }
 
-gamemap_remove_entity :: proc(gm: ^GameMap, e: Entity) {
-	unordered_remove(&gm.entities, e.id)
+gamemap_remove_entity_raw :: proc(gm: ^GameMap, e: Entity) {
+	if idx, idx_ok := slice_find(gm.entities[:], e.id); idx_ok {
+		unordered_remove(&gm.entities, idx)
+	}
+}
+
+gamemap_remove_entity_id :: proc(gm: ^GameMap, e_id: ObjId) {
+	if idx, idx_ok := slice_find(gm.entities[:], e_id); idx_ok {
+		unordered_remove(&gm.entities, idx)
+	}
+}
+
+gamemap_remove_entity :: proc {
+	gamemap_remove_entity_raw,
+	gamemap_remove_entity_id,
 }
 
 gamemap_explore :: proc(gm: ^GameMap, pos: Point) {
@@ -417,4 +435,98 @@ gamemap_get_mob_at_mut :: proc(gm: GameMap, pos: Point) -> (EntityInstMut(Mobile
 	}
 
 	return {}, false
+}
+
+gamemap_get_entity_at :: proc(gm: GameMap, pos: Point) -> (Entity, int) {
+	result: Entity
+	cur_z := -1
+	i := 0
+	for e_id in gm.entities {
+		e := entity_get(e_id)
+		if e.pos == pos && e.z > cur_z {
+			result = e
+			cur_z = e.z
+			i += 1
+		}
+	}
+
+	if i > 0 {
+		return result, i
+	}
+
+	return {}, 0
+}
+
+/* Dijkstra Maps */
+
+DMap :: Grid(int)
+
+gamemap_dmap_update :: proc(gm: ^GameMap, goals: ..Point) {
+	q: queue.Queue(Point)
+	queue.init(&q)
+	defer queue.destroy(&q)
+
+	dirs := [4]Direction{.Up, .Down, .Left, .Right}
+	grid_fill(&gm.enemy_dmap, DMAP_SENTINEL)
+
+	for goal in goals {
+		grid_set(&gm.enemy_dmap, goal, 0)
+		queue.push_back(&q, goal)
+	}
+
+	for queue.len(q) > 0 {
+		cur := queue.pop_front(&q)
+		cur_val := grid_get(gm.enemy_dmap, cur)
+		for dir in dirs {
+			nei := point_by_dir(cur, dir)
+			if val, val_ok := grid_get(gm.enemy_dmap, nei);
+			   val_ok && val > cur_val + 1 && map_can_walk(gm^, nei) {
+				grid_set(&gm.enemy_dmap, nei, cur_val + 1)
+				queue.push_back(&q, nei)
+			}
+		}
+	}
+}
+
+dmap_debug_print :: proc(dm: DMap) {
+	for y in 0 ..< dm.height {
+		for x in 0 ..< dm.width {
+			v := grid_get(dm, {x, y})
+			switch {
+			case v < 10:
+				fmt.print(v)
+			case v == 10:
+				fmt.print("A")
+			case v == 11:
+				fmt.print("B")
+			case v == 12:
+				fmt.print("C")
+			case v == 13:
+				fmt.print("D")
+			case v == 14:
+				fmt.print("E")
+			case v == 15:
+				fmt.print("F")
+			case v == DMAP_SENTINEL:
+				fmt.print("X")
+			case:
+				fmt.print("*")
+			}
+		}
+		fmt.println("")
+	}
+}
+
+dmap_get_next_step :: proc(dm: DMap, pos: Point) -> Direction {
+	dirs := [4]Direction{.Up, .Down, .Left, .Right}
+	d := DMAP_SENTINEL
+	result: Direction = .None
+	for dir in dirs {
+		nei := point_by_dir(pos, dir)
+		if val, val_ok := grid_get(dm, nei); val_ok && val < d {
+			d = val
+			result = dir
+		}
+	}
+	return result
 }

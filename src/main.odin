@@ -1,9 +1,11 @@
 package main
 
 import "core:c"
+import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:mem"
+import "core:strings"
 import rl "vendor:raylib"
 
 /* Game Constants */
@@ -19,12 +21,16 @@ FPS :: 60
 LERP_MOVE_FACTOR :: 0.5
 LERP_SNAP_THRESHOLD :: 0.01
 DAMAGE_TIMER :: 0.3
-FONT_NUM_GLYPHS :: 46
+FONT_NUM_GLYPHS :: 73
+DMAP_SENTINEL :: 9999
+MSG_BUFFER_LEN :: 50
 
 GameState :: enum {
 	Input,
+	Item,
 	Move,
 	Damage,
+	Messages,
 }
 
 /* Game Globals */
@@ -39,10 +45,17 @@ _hero_loc: Point
 _state: GameState
 _cur_map: GameMap
 _swing_sound: rl.Sound
+_magic_sound: rl.Sound
 _dungeon_music: rl.Music
 _dam_timer: f32
 _font: rl.Font
 _font_atlas: rl.Texture2D
+_damage := false
+_target: union {
+	ObjId,
+}
+_msg_queue_data: [MSG_BUFFER_LEN]cstring
+_msg_queue: queue.Queue(cstring)
 
 /* Game Lifecycle */
 
@@ -74,12 +87,27 @@ build_font :: proc() {
 		_font.recs[i] = {f32(i - 26) * 8, 8, 8, 8}
 		i += 1
 	}
+	_font.glyphs[i] = {
+		value = '-',
+	}
+	_font.recs[i] = {f32(21 * 8), 8, 8, 8}
+	i += 1
+
+	j := 0
+	for small in 'a' ..= 'z' {
+		_font.glyphs[i + j] = {
+			value = small,
+		}
+		_font.recs[i + j] = {f32(j) * 8, 16, 8, 8}
+		j += 1
+	}
 }
 
 init :: proc() {
 	rl.InitWindow(SCR_W, SCR_H, TITLE)
 	rl.SetTargetFPS(FPS)
 	rl.InitAudioDevice()
+	rl.SetExitKey(rl.KeyboardKey.KEY_NULL)
 
 	atlas_data := #load("../assets/gfx/lovable-rogue-cut.png")
 	atlas_img := rl.LoadImageFromMemory(".png", raw_data(atlas_data), c.int(len(atlas_data)))
@@ -100,7 +128,14 @@ init :: proc() {
 		c.int(len(swing_sound_data)),
 	)
 	_swing_sound = rl.LoadSoundFromWave(swing_sound_wav)
-	// _swing_sound = rl.LoadSound("./swing.wav")
+
+	magic_sound_data := #load("../assets/sfx/magic1.wav")
+	magic_sound_wav := rl.LoadWaveFromMemory(
+		".wav",
+		raw_data(magic_sound_data),
+		c.int(len(magic_sound_data)),
+	)
+	_magic_sound = rl.LoadSoundFromWave(magic_sound_wav)
 
 	dungeon_mus_data := #load("../assets/sfx/dungeon.xm")
 	_dungeon_music = rl.LoadMusicStreamFromMemory(
@@ -108,8 +143,7 @@ init :: proc() {
 		raw_data(dungeon_mus_data),
 		c.int(len(dungeon_mus_data)),
 	)
-	rl.SetMusicVolume(_dungeon_music, 0.5)
-	// _dungeon_music = rl.LoadMusicStream("./dungeon.xm")
+	rl.SetMusicVolume(_dungeon_music, 0.3)
 
 	// first_floor := map_make_recursive(39, 29, 1)
 	// first_floor := map_make_arena(21, 21)
@@ -120,38 +154,130 @@ init :: proc() {
 	spawn(Consumable_ID.Potion_Healing)
 	spawn(Consumable_ID.Scroll_Lightning)
 
+	queue.init_from_slice(&_msg_queue, _msg_queue_data[:])
+
 	_dam_timer = DAMAGE_TIMER
+	mobile_update_fov(PLAYER_ID)
 }
+
+get_player :: proc() -> Entity {
+	return entity_get(PLAYER_ID)
+}
+
+get_player_mut :: proc() -> ^Entity {
+	return entity_get_mut(PLAYER_ID)
+}
+
+item_try_use :: proc(user: ObjId, idx: int) -> bool {
+	user_e, mob_ok := entity_get_comp(user, Mobile)
+	if len(user_e.inventory.items) > idx && mob_ok {
+		mobile_use_consumable(user, user_e.inventory.items[idx])
+		return true
+	}
+
+	return false
+}
+
 
 //Should return false to stop the game
 update :: proc() -> bool {
 	dt := rl.GetFrameTime()
+	moved: MoveResult = .NoMove
+	player := get_player()
 
-	switch _state {
+
+	#partial switch _state {
 	case .Input:
 		switch {
 		case rl.WindowShouldClose():
 			return false
 		case rl.IsKeyPressed(.W):
-			entity_move_by(PLAYER_ID, .Up)
+			moved = entity_move_by(PLAYER_ID, .Up)
 		case rl.IsKeyPressed(.A):
-			entity_move_by(PLAYER_ID, .Left)
+			moved = entity_move_by(PLAYER_ID, .Left)
 		case rl.IsKeyPressed(.S):
-			entity_move_by(PLAYER_ID, .Down)
+			moved = entity_move_by(PLAYER_ID, .Down)
 		case rl.IsKeyPressed(.D):
-			entity_move_by(PLAYER_ID, .Right)
+			moved = entity_move_by(PLAYER_ID, .Right)
+		case rl.IsKeyPressed(.G):
+			for e_id in _cur_map.entities {
+				item := entity_get(e_id)
+				if e_id != PLAYER_ID && item.pos == player.pos {
+					entity_pick_up_item(PLAYER_ID, e_id)
+					moved = .Moved
+				}
+			}
+		case rl.IsKeyPressed(.H):
+			_state = .Messages
+		case rl.IsKeyPressed(.I):
+			_state = .Item
+		case rl.IsMouseButtonPressed(rl.MouseButton.LEFT):
+			mouse_map_pos := get_world_mouse_pos()
+			if maybe_target, target_ok := gamemap_get_mob_at(_cur_map, mouse_map_pos);
+			   target_ok && is_visible_to_player(mouse_map_pos) {
+				_target = maybe_target.id
+			}
+
+		case rl.IsKeyPressed(.ESCAPE):
+			return false
 		}
-		mobile_update_fov(PLAYER_ID)
+
+		#partial switch moved {
+		case .Moved, .Bump:
+			_state = .Move
+		}
+
+	case .Item:
+		to_use := -1
+		switch {
+		case rl.IsKeyPressed(.ESCAPE):
+			_state = .Input
+		case rl.IsKeyPressed(.KP_1):
+			to_use = 0
+		case rl.IsKeyPressed(.KP_2):
+			to_use = 1
+		case rl.IsKeyPressed(.KP_3):
+			to_use = 2
+		case rl.IsKeyPressed(.KP_4):
+			to_use = 3
+		case rl.IsKeyPressed(.KP_5):
+			to_use = 4
+		case rl.IsKeyPressed(.KP_6):
+			to_use = 5
+		case rl.IsKeyPressed(.KP_7):
+			to_use = 6
+		case rl.IsKeyPressed(.KP_8):
+			to_use = 7
+		}
+
+		if to_use > -1 {
+			used := item_try_use(PLAYER_ID, to_use)
+			if used {
+				_state = .Move
+			}
+		}
 
 	case .Move:
-	// _hero_screen_pos.x = rl.Lerp(_hero_screen_pos.x, _hero_screen_to.x, LERP_MOVE_FACTOR)
-	// _hero_screen_pos.y = rl.Lerp(_hero_screen_pos.y, _hero_screen_to.y, LERP_MOVE_FACTOR)
-	// if rl.Vector2Distance(_hero_screen_pos, _hero_screen_to) < LERP_SNAP_THRESHOLD {
-	// 	_hero_screen_pos = _hero_screen_to
-	// }
-	// if _hero_screen_pos == _hero_screen_to {
-	// 	_state = .Input
-	// }
+		mobile_update_fov(PLAYER_ID)
+		gamemap_dmap_update(&_cur_map, get_player().pos)
+		e_moved := MoveResult.NoMove
+		damage_step := false
+		for e_id in _cur_map.entities {
+			if e_mob, e_mob_ok := entity_get_comp(e_id, Mobile); e_mob_ok && e_id != PLAYER_ID {
+				mobile_update_fov(e_id)
+				if is_visible(e_id, PLAYER_ID) {
+					mob_move_dir := dmap_get_next_step(_cur_map.enemy_dmap, e_mob.pos)
+					e_moved = entity_move_by(e_id, mob_move_dir)
+				}
+			}
+		}
+		if _damage {
+			_damage = false
+			_state = .Damage
+		} else {
+			_state = .Input
+		}
+
 	case .Damage:
 		_dam_timer -= dt
 		if _dam_timer <= 0 {
@@ -163,6 +289,14 @@ update :: proc() -> bool {
 			}
 			_state = .Input
 		}
+	case .Messages:
+		if rl.IsKeyPressed(.ESCAPE) {
+			_state = .Input
+		}
+	}
+
+	if _target != nil && !is_visible_to_player(_target.?) {
+		_target = nil
 	}
 
 	return true
@@ -172,10 +306,22 @@ draw :: proc() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
 	rl.BeginMode2D(_cam)
-	draw_map(_cur_map)
-	//draw_tile(.Hero, _hero_screen_pos.x, _hero_screen_pos.y, rl.BEIGE)
-	draw_entities(_cur_map)
-	draw_stats()
+	#partial switch _state {
+	case .Input, .Item, .Move, .Damage:
+		draw_map(_cur_map)
+		draw_entities(_cur_map)
+		highlight_hover()
+		if _target != nil {
+			highlight(_target.?, COLOR_TARGET)
+		}
+		draw_stats()
+		if _state == .Item {
+			draw_item_menu()
+		}
+		draw_last_msg()
+	case .Messages:
+		draw_messages()
+	}
 	rl.EndMode2D()
 	when ODIN_DEBUG {rl.DrawFPS(0, 0)}
 	rl.EndDrawing()
@@ -189,12 +335,15 @@ shutdown :: proc() {
 	delete(_entity_store)
 	rl.UnloadMusicStream(_dungeon_music)
 	rl.UnloadSound(_swing_sound)
+	rl.UnloadSound(_magic_sound)
 	rl.CloseAudioDevice()
 	rl.UnloadTexture(_atlas_texture)
-	// rl.UnloadFontData(_font.glyphs, FONT_NUM_GLYPHS)
-	// rl.UnloadFont(_font)
 	free(_font.glyphs)
 	free(_font.recs)
+	for msg in _msg_queue_data {
+		delete(msg)
+	}
+	queue.destroy(&_msg_queue)
 	rl.UnloadTexture(_font_atlas)
 	rl.CloseWindow()
 }
@@ -219,6 +368,79 @@ spawn_consumable :: proc(cons_id: Consumable_ID) -> ObjId {
 	gamemap_add_entity(&_cur_map, cons)
 	return cons.id
 }
+
+/* Custom Iterators */
+
+EntityIterator :: struct {
+	index: int,
+	data:  []ObjId,
+}
+
+make_entity_iterator :: proc(data: []ObjId) -> EntityIterator {
+	return {data = data}
+}
+
+entities_at_pos_comp :: proc(
+	it: ^EntityIterator,
+	pos: Point,
+	$T: typeid,
+) -> (
+	val: EntityInst(T),
+	idx: int,
+	cond: bool,
+) {
+	cond = it.index < len(it.data)
+
+	for ; cond; cond = it.index < len(it.data) {
+		e, ok := entity_get_comp(it.data[it.index])
+		if !ok || e.pos != pos {
+			it.index += 1
+			continue
+		}
+
+		val = e
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
+}
+
+entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: int, cond: bool) {
+	cond = it.index < len(it.data)
+
+	for ; cond; cond = it.index < len(it.data) {
+		e := entity_get(it.data[it.index])
+		if e.pos != pos {
+			it.index += 1
+			continue
+		}
+
+		val = e
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
+}
+
+/* Messaging */
+
+//ALLOCATES a new cstring, uses `rl.TextFormat` under the hood
+add_msg :: proc(msg: cstring, args: ..any) {
+	formatted := strings.clone_from_cstring(rl.TextFormat(msg, ..args))
+
+	if queue.len(_msg_queue) >= MSG_BUFFER_LEN {
+		to_delete := queue.pop_back(&_msg_queue)
+		delete(to_delete)
+	}
+	queue.push_front(&_msg_queue, strings.clone_to_cstring(formatted))
+	delete(formatted)
+}
+
+/* Main */
 
 main :: proc() {
 
@@ -252,5 +474,6 @@ main :: proc() {
 		rl.UpdateMusicStream(_dungeon_music)
 		running = update()
 		draw()
+		free_all(context.temp_allocator)
 	}
 }

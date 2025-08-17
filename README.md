@@ -16,7 +16,7 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 * [x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
 * [x] Week 3 - Field of View, Placing Enemies and Kicking Them
 * [x] Week 4 - Doing and Taking Damage, Interface
-* [ ] Week 5 - **Items and Invventory, Ranged Scrolls and Targeting**
+* [x] Week 5 - **Items and Inventory, Ranged Scrolls and Targeting**
 * [ ] Week 6 - Saving and Loading, Delving into the Dungeon
 * [ ] Week 7 - Increasing Difficulty, Gearing Up
 * [ ] Week 8 - Conclusion
@@ -220,3 +220,24 @@ Stamina is influenced by HD and WL.
 ## Week 5 (2025-08-12) Inventory, Items, Targeting
 
 I have the bones in place for basic attacks and doing damage. I will continue to revise the system with equipment and consumables. As usual, new code will be in the `week5` branch.
+
+### 2025-08-13
+
+Added basic inventory and monster movement. Currently working on consumable uses. Stat potions will be an important part of progression.
+
+### 2025-08-14
+
+Tweaked the inventory UI and fully implemented the Potion of Healing. Also improved the modularity of debugging messages.
+
+### 2025-08-15
+
+More UI work - adding tooltips and targeting.
+
+https://github.com/user-attachments/assets/955558b3-ea9e-4324-909a-447add8e6f95
+
+### 2025-08-16
+
+The messaging system is in. The last message produced by the game is displayed on top. The player can press `h` to view the last 50 (number subject to change) messages.
+
+https://github.com/user-attachments/assets/3e76117a-9fb2-47a4-8d68-2c31d8aafc7b
+

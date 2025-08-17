@@ -1,5 +1,6 @@
 package main
 
+import "core:log"
 import "core:math"
 import "core:strings"
 import rl "vendor:raylib"
@@ -19,21 +20,29 @@ Stat :: enum {
 Attack :: distinct [2]int
 
 Mobile :: struct {
-	energy:   int,
-	cur_hp:   int,
-	max_hp:   int,
-	visible:  Grid(bool),
-	vision:   int,
-	damage:   int,
-	stats:    [Stat]int,
-	stamina:  int,
-	fatigue:  int,
-	base_atk: Attack,
-	atk_stat: Stat,
+	energy:    int,
+	cur_hp:    int,
+	max_hp:    int,
+	visible:   Grid(bool),
+	vision:    int,
+	damage:    int,
+	stats:     [Stat]int,
+	stamina:   int,
+	fatigue:   int,
+	base_atk:  Attack,
+	atk_stat:  Stat,
+	base_hp:   int,
+	mobile_id: Mobile_ID,
 }
 
 Consumable :: struct {
-	uses: int,
+	uses:          int,
+	consumable_id: Consumable_ID,
+}
+
+Inventory :: struct {
+	capacity: int,
+	items:    [dynamic]ObjId,
 }
 
 EntityType :: union #no_nil {
@@ -42,14 +51,15 @@ EntityType :: union #no_nil {
 }
 
 Entity :: struct {
-	id:    ObjId,
-	name:  cstring,
-	desc:  cstring,
-	pos:   Point,
-	tile:  Atlas_Tile,
-	color: rl.Color,
-	etype: EntityType,
-	z:     int,
+	id:        ObjId,
+	name:      cstring,
+	desc:      cstring,
+	pos:       Point,
+	tile:      Atlas_Tile,
+	color:     rl.Color,
+	etype:     EntityType,
+	z:         int,
+	inventory: Inventory,
 }
 
 EntityInst :: struct($T: typeid) {
@@ -60,6 +70,12 @@ EntityInst :: struct($T: typeid) {
 EntityInstMut :: struct($T: typeid) {
 	using entity: ^Entity,
 	using type:   ^T,
+}
+
+MoveResult :: enum {
+	NoMove,
+	Moved,
+	Bump,
 }
 
 entity_create :: proc(
@@ -87,6 +103,7 @@ entity_create :: proc(
 entity_destroy :: proc(e: ^Entity, allocator := context.allocator) {
 	delete(e.name, allocator)
 	delete(e.desc, allocator)
+	delete(e.inventory.items)
 	#partial switch &variant in e.etype {
 	case Mobile:
 		grid_destroy(&variant.visible)
@@ -128,19 +145,27 @@ entity_remove :: proc(e: ^Entity, allocator := context.allocator) {
 	entity_destroy(e, allocator)
 }
 
-entity_move_by :: proc(e_id: ObjId, dir: Direction) {
+entity_move_by :: proc(e_id: ObjId, dir: Direction) -> MoveResult {
 	e := entity_get_mut(e_id)
 	new_pos := point_by_dir(e.pos, dir)
 	bumped, mob_ok := gamemap_get_mob_at(_cur_map, new_pos)
 	if map_can_walk(_cur_map, new_pos) && !mob_ok {
 		e.pos = new_pos
-	} else if mob_ok {
-		mob_bump(e_id, bumped.id)
+		return .Moved
 	}
+
+	if mob_ok {
+		mob_bump(e_id, bumped.id)
+		return .Bump
+	}
+
+	return .NoMove
 }
 
 mobile_update_fov :: proc(e_id: ObjId) {
-	mob := entity_get_comp_mut(e_id, Mobile)
+	mob, mob_ok := entity_get_comp_mut(e_id, Mobile)
+	if !mob_ok do return
+
 	grid_fill(&mob.visible, false)
 
 	for deg in 0 ..< 360 {
@@ -163,11 +188,161 @@ mob_bump :: proc(bumper_id: ObjId, bumped_id: ObjId) {
 	if bumper_id == PLAYER_ID || bumped_id == PLAYER_ID {
 		attacker := entity_get_comp_mut(bumper_id, Mobile)
 		defender := entity_get_comp_mut(bumped_id, Mobile)
-		basic_attack(attacker, defender)
+		attacker_visible := is_visible_to_player(bumper_id)
+		defender_visible := is_visible_to_player(bumped_id)
+		switch {
+		case attacker_visible && defender_visible:
+			add_msg("%s attacks %s!", attacker.name, defender.name)
+		case attacker_visible:
+			add_msg("%s attacks something!", attacker.name)
+		case defender_visible:
+			add_msg("Something attacks %s!", defender.name)
+		}
+		system_basic_attack(attacker, defender)
 	}
 }
 
-is_visible_to_player :: proc(pos: Point) -> bool {
+is_visible :: proc(looker_id: ObjId, subject_id: ObjId) -> bool {
+	looker_mob := entity_get_comp(looker_id, Mobile)
+	subj_pos := entity_get(looker_id).pos
+	return grid_get(looker_mob.visible, subj_pos)
+}
+
+is_visible_to_player_pos :: proc(pos: Point) -> bool {
 	mob := entity_get_comp(PLAYER_ID, Mobile)
 	return grid_get(mob.visible, pos)
+}
+
+is_visible_to_player_id :: proc(e_id: ObjId) -> bool {
+	e := entity_get(e_id)
+	if e_id not_in _entity_store do return false
+	if _, found := slice_find(_cur_map.entities[:], e_id); !found {
+		return false
+	}
+	return is_visible_to_player_pos(e.pos)
+}
+
+is_visible_to_player :: proc {
+	is_visible_to_player_pos,
+	is_visible_to_player_id,
+}
+
+
+entity_pick_up_item :: proc(grabber: ObjId, grabbed: ObjId) {
+	grabber_entity := entity_get_mut(grabber)
+	grabbed_name := entity_get(grabbed).name
+	if grabber_entity.inventory.capacity > len(grabber_entity.inventory.items) {
+		append(&grabber_entity.inventory.items, grabbed)
+		gamemap_remove_entity(&_cur_map, grabbed)
+	}
+	when ODIN_DEBUG {
+		log.infof("%v picks up %v at %v", grabber_entity.name, grabbed_name, grabber_entity.pos)
+		log.infof("%v's inventory ids: %v", grabber_entity.name, grabber_entity.inventory.items)
+	}
+	if is_visible_to_player(grabber) {
+		add_msg("%s picks up %s", grabber_entity.name, grabbed_name)
+	}
+}
+
+entity_drop_item :: proc(dropper: ObjId, dropped: ObjId) {
+	dropper_entity := entity_get_mut(dropper)
+	dropped_entity := entity_get_mut(dropped)
+
+	if idx, idx_ok := slice_find(dropper_entity.inventory.items[:], dropped); idx_ok {
+		unordered_remove(&dropper_entity.inventory.items, idx)
+		dropped_entity.pos = dropper_entity.pos
+		gamemap_add_entity(&_cur_map, dropped_entity^)
+	}
+
+	when ODIN_DEBUG {
+		log.infof(
+			"%v drops %v at %v",
+			dropper_entity.name,
+			dropped_entity.name,
+			dropped_entity.pos,
+		)
+		log.infof("%v's inventory ids: %v", dropper_entity.name, dropper_entity.inventory.items)
+	}
+	if is_visible_to_player(dropper) {
+		add_msg("%s drops %s", dropper_entity.name, dropper_entity.name)
+	}
+}
+
+mobile_gain_stat :: proc(gainer: ObjId, stat: Stat, amt := 1) {
+	if gainer_entity, ok := entity_get_comp_mut(gainer, Mobile); ok {
+		gainer_entity.stats[stat] += amt
+		if stat == .WL || stat == .HD {
+			system_update_vitals(gainer_entity)
+		}
+	}
+}
+
+mobile_use_consumable :: proc(user: ObjId, consumable: ObjId) {
+	user_entity, user_ok := entity_get_comp_mut(user, Mobile)
+	cons_entity, cons_ok := entity_get_comp_mut(consumable, Consumable)
+	if user_ok && cons_ok {
+		#partial switch cons_entity.consumable_id {
+		case Consumable_ID.Potion_Healing:
+			healing := system_roll_dice(6, 2)
+			if is_visible_to_player(user) {
+				add_msg("%s quaffs a potion of healing", user_entity.name)
+			}
+			system_mob_heal(user_entity, healing)
+		case Consumable_ID.Potion_ST:
+			mobile_gain_stat(user, .ST)
+			if user == PLAYER_ID {
+				add_msg("You grow stronger.")
+			}
+		case Consumable_ID.Potion_HD:
+			mobile_gain_stat(user, .HD)
+			if user == PLAYER_ID {
+				add_msg("You become hardier.")
+			}
+		case Consumable_ID.Potion_AG:
+			mobile_gain_stat(user, .AG)
+			if user == PLAYER_ID {
+				add_msg("You become more agile.")
+			}
+		case Consumable_ID.Potion_WL:
+			mobile_gain_stat(user, .WL)
+			if user == PLAYER_ID {
+				add_msg("You become more willful.")
+			}
+		case Consumable_ID.Scroll_Lightning:
+			if user == PLAYER_ID && _target == nil {
+				when ODIN_DEBUG {
+					log.infof("No target selected for lightning bolt")
+				}
+				add_msg("No target.")
+				return
+			} else if user == PLAYER_ID {
+				system_cast_lb(user_entity, entity_get_comp_mut(_target.?, Mobile))
+			}
+		}
+		cons_entity.uses -= 1
+		if cons_entity.uses < 1 {
+			entity_inv_remove_item(user, consumable)
+		}
+		when ODIN_DEBUG {
+			log.infof("%v uses %v", user_entity.name, cons_entity.name)
+		}
+	}
+}
+
+entity_inv_remove_item :: proc(e_id: ObjId, item_id: ObjId) {
+	entity := entity_get_mut(e_id)
+	if idx, ok := slice_find(entity.inventory.items[:], item_id); ok {
+		unordered_remove(&entity.inventory.items, idx)
+		item := entity_get_mut(item_id)
+		entity_remove(item)
+	}
+}
+
+mobile_on_death :: proc(dead_id: ObjId) {
+	dead_e := entity_get_mut(dead_id)
+	add_msg("%s is slain!", dead_e.name)
+	if dead_id != PLAYER_ID {
+		gamemap_remove_entity(&_cur_map, dead_id)
+		entity_remove(dead_e)
+	}
 }
