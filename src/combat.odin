@@ -60,7 +60,7 @@ system_mob_take_damage :: proc(e_mob: EntityInstMut(Mobile), dmg: int) {
 	when ODIN_DEBUG {
 		log.infof("[SYSTEM] %v takes %v damage", e_mob.name, dmg)
 	}
-	add_msg("%s takes %d damage", e_mob.name, dmg)
+	add_msg("%s takes %d damage.", e_mob.name, dmg)
 	if system_is_slain(e_mob.type^) do mobile_on_death(e_mob.id)
 	_damage = true
 }
@@ -73,7 +73,7 @@ system_mob_heal :: proc(e_mob: EntityInstMut(Mobile), amt: int) -> int {
 	when ODIN_DEBUG {
 		log.infof("[SYSTEM] %v healed for %v (real %v)", e_mob.name, amt, real_healed)
 	}
-	add_msg("%s heals %d damage", e_mob.name, real_healed)
+	add_msg("%s heals %d damage.", e_mob.name, real_healed)
 	return real_healed
 
 }

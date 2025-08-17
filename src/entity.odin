@@ -236,7 +236,6 @@ entity_pick_up_item :: proc(grabber: ObjId, grabbed: ObjId) {
 		gamemap_remove_entity(&_cur_map, grabbed)
 	}
 	when ODIN_DEBUG {
-
 		log.infof("%v picks up %v at %v", grabber_entity.name, grabbed_name, grabber_entity.pos)
 		log.infof("%v's inventory ids: %v", grabber_entity.name, grabber_entity.inventory.items)
 	}
@@ -264,6 +263,9 @@ entity_drop_item :: proc(dropper: ObjId, dropped: ObjId) {
 		)
 		log.infof("%v's inventory ids: %v", dropper_entity.name, dropper_entity.inventory.items)
 	}
+	if is_visible_to_player(dropper) {
+		add_msg("%s drops %s", dropper_entity.name, dropper_entity.name)
+	}
 }
 
 mobile_gain_stat :: proc(gainer: ObjId, stat: Stat, amt := 1) {
@@ -282,20 +284,36 @@ mobile_use_consumable :: proc(user: ObjId, consumable: ObjId) {
 		#partial switch cons_entity.consumable_id {
 		case Consumable_ID.Potion_Healing:
 			healing := system_roll_dice(6, 2)
+			if is_visible_to_player(user) {
+				add_msg("%s quaffs a potion of healing", user_entity.name)
+			}
 			system_mob_heal(user_entity, healing)
 		case Consumable_ID.Potion_ST:
 			mobile_gain_stat(user, .ST)
+			if user == PLAYER_ID {
+				add_msg("You grow stronger.")
+			}
 		case Consumable_ID.Potion_HD:
 			mobile_gain_stat(user, .HD)
+			if user == PLAYER_ID {
+				add_msg("You become hardier.")
+			}
 		case Consumable_ID.Potion_AG:
 			mobile_gain_stat(user, .AG)
+			if user == PLAYER_ID {
+				add_msg("You become more agile.")
+			}
 		case Consumable_ID.Potion_WL:
 			mobile_gain_stat(user, .WL)
+			if user == PLAYER_ID {
+				add_msg("You become more willful.")
+			}
 		case Consumable_ID.Scroll_Lightning:
 			if user == PLAYER_ID && _target == nil {
 				when ODIN_DEBUG {
 					log.infof("No target selected for lightning bolt")
 				}
+				add_msg("No target.")
 				return
 			} else if user == PLAYER_ID {
 				system_cast_lb(user_entity, entity_get_comp_mut(_target.?, Mobile))
