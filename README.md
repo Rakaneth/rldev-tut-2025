@@ -239,3 +239,5 @@ https://github.com/user-attachments/assets/955558b3-ea9e-4324-909a-447add8e6f95
 
 The messaging system is in. The last message produced by the game is displayed on top. The player can press `h` to view the last 50 (number subject to change) messages.
 
+https://github.com/user-attachments/assets/3e76117a-9fb2-47a4-8d68-2c31d8aafc7b
+
