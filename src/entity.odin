@@ -198,6 +198,7 @@ mob_bump :: proc(bumper_id: ObjId, bumped_id: ObjId) {
 		case defender_visible:
 			add_msg("Something attacks %s!", defender.name)
 		}
+		play_sound(.Swing)
 		system_basic_attack(attacker, defender)
 	}
 }
@@ -287,23 +288,28 @@ mobile_use_consumable :: proc(user: ObjId, consumable: ObjId) {
 			if is_visible_to_player(user) {
 				add_msg("%s quaffs a potion of healing", user_entity.name)
 			}
+			play_sound(.Drink)
 			system_mob_heal(user_entity, healing)
 		case Consumable_ID.Potion_ST:
+			play_sound(.Drink)
 			mobile_gain_stat(user, .ST)
 			if user == PLAYER_ID {
 				add_msg("You grow stronger.")
 			}
 		case Consumable_ID.Potion_HD:
+			play_sound(.Drink)
 			mobile_gain_stat(user, .HD)
 			if user == PLAYER_ID {
 				add_msg("You become hardier.")
 			}
 		case Consumable_ID.Potion_AG:
+			play_sound(.Drink)
 			mobile_gain_stat(user, .AG)
 			if user == PLAYER_ID {
 				add_msg("You become more agile.")
 			}
 		case Consumable_ID.Potion_WL:
+			play_sound(.Drink)
 			mobile_gain_stat(user, .WL)
 			if user == PLAYER_ID {
 				add_msg("You become more willful.")
@@ -316,6 +322,7 @@ mobile_use_consumable :: proc(user: ObjId, consumable: ObjId) {
 				add_msg("No target.")
 				return
 			} else if user == PLAYER_ID {
+				play_sound(.Magic)
 				system_cast_lb(user_entity, entity_get_comp_mut(_target.?, Mobile))
 			}
 		}
@@ -345,4 +352,61 @@ mobile_on_death :: proc(dead_id: ObjId) {
 		gamemap_remove_entity(&_cur_map, dead_id)
 		entity_remove(dead_e)
 	}
+}
+
+/* Custom Entity Iterators */
+
+EntityIterator :: struct {
+	index: int,
+	data:  []ObjId,
+}
+
+make_entity_iterator :: proc(data: []ObjId) -> EntityIterator {
+	return {data = data}
+}
+
+entities_at_pos_comp :: proc(
+	it: ^EntityIterator,
+	pos: Point,
+	$T: typeid,
+) -> (
+	val: EntityInst(T),
+	idx: int,
+	cond: bool,
+) {
+	cond = it.index < len(it.data)
+
+	for ; cond; cond = it.index < len(it.data) {
+		e, ok := entity_get_comp(it.data[it.index])
+		if !ok || e.pos != pos {
+			it.index += 1
+			continue
+		}
+
+		val = e
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
+}
+
+entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: int, cond: bool) {
+	cond = it.index < len(it.data)
+
+	for ; cond; cond = it.index < len(it.data) {
+		e := entity_get(it.data[it.index])
+		if e.pos != pos {
+			it.index += 1
+			continue
+		}
+
+		val = e
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
 }

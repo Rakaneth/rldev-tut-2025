@@ -33,6 +33,15 @@ GameState :: enum {
 	Messages,
 }
 
+Sound_Name :: enum {
+	Swing,
+	Magic,
+	Drink,
+	Hit,
+}
+
+Sounds: [Sound_Name]rl.Sound
+
 /* Game Globals */
 
 _cam := rl.Camera2D {
@@ -46,6 +55,8 @@ _state: GameState
 _cur_map: GameMap
 _swing_sound: rl.Sound
 _magic_sound: rl.Sound
+_drink_sound: rl.Sound
+_hit_sound: rl.Sound
 _dungeon_music: rl.Music
 _dam_timer: f32
 _font: rl.Font
@@ -56,8 +67,15 @@ _target: union {
 }
 _msg_queue_data: [MSG_BUFFER_LEN]cstring
 _msg_queue: queue.Queue(cstring)
+_sound_queue: queue.Queue(Sound_Name)
 
-/* Game Lifecycle */
+
+/* Setup */
+
+load_sound_from_wave :: proc(data: []byte) -> rl.Sound {
+	wav := rl.LoadWaveFromMemory(".wav", raw_data(data), c.int(len(data)))
+	return rl.LoadSoundFromWave(wav)
+}
 
 build_font :: proc() {
 	_font.baseSize = 8
@@ -103,6 +121,7 @@ build_font :: proc() {
 	}
 }
 
+/*Game Init Procedures */
 init :: proc() {
 	rl.InitWindow(SCR_W, SCR_H, TITLE)
 	rl.SetTargetFPS(FPS)
@@ -122,20 +141,23 @@ init :: proc() {
 	build_font()
 
 	swing_sound_data := #load("../assets/sfx/swing.wav")
-	swing_sound_wav := rl.LoadWaveFromMemory(
-		".wav",
-		raw_data(swing_sound_data),
-		c.int(len(swing_sound_data)),
-	)
-	_swing_sound = rl.LoadSoundFromWave(swing_sound_wav)
+	_swing_sound = load_sound_from_wave(swing_sound_data)
 
 	magic_sound_data := #load("../assets/sfx/magic1.wav")
-	magic_sound_wav := rl.LoadWaveFromMemory(
-		".wav",
-		raw_data(magic_sound_data),
-		c.int(len(magic_sound_data)),
-	)
-	_magic_sound = rl.LoadSoundFromWave(magic_sound_wav)
+	_magic_sound = load_sound_from_wave(magic_sound_data)
+
+	drink_sound_data := #load("../assets/sfx/bubble.wav")
+	_drink_sound = load_sound_from_wave(drink_sound_data)
+
+	hit_sound_data := #load("../assets/sfx/random2.wav")
+	_hit_sound = load_sound_from_wave(hit_sound_data)
+
+	Sounds = {
+		.Swing = _swing_sound,
+		.Magic = _magic_sound,
+		.Drink = _drink_sound,
+		.Hit   = _hit_sound,
+	}
 
 	dungeon_mus_data := #load("../assets/sfx/dungeon.xm")
 	_dungeon_music = rl.LoadMusicStreamFromMemory(
@@ -144,6 +166,7 @@ init :: proc() {
 		c.int(len(dungeon_mus_data)),
 	)
 	rl.SetMusicVolume(_dungeon_music, 0.3)
+	queue.init(&_sound_queue)
 
 	// first_floor := map_make_recursive(39, 29, 1)
 	// first_floor := map_make_arena(21, 21)
@@ -178,8 +201,18 @@ item_try_use :: proc(user: ObjId, idx: int) -> bool {
 	return false
 }
 
+play_sound :: proc(sound: Sound_Name) {
+	queue.push_back(&_sound_queue, sound)
+}
 
-//Should return false to stop the game
+//returns a value between 0.5 and 1
+random_pitch :: proc() -> f32 {
+	r := rand_next_float()
+	return (r * 0.5) + 0.5
+}
+
+
+//Game Update. Should return false to stop the game
 update :: proc() -> bool {
 	dt := rl.GetFrameTime()
 	moved: MoveResult = .NoMove
@@ -302,6 +335,7 @@ update :: proc() -> bool {
 	return true
 }
 
+/* Draw */
 draw :: proc() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
@@ -327,6 +361,7 @@ draw :: proc() {
 	rl.EndDrawing()
 }
 
+/* Game Shutdown */
 shutdown :: proc() {
 	gamemap_destroy(&_cur_map)
 	for _, &e in _entity_store {
@@ -336,6 +371,8 @@ shutdown :: proc() {
 	rl.UnloadMusicStream(_dungeon_music)
 	rl.UnloadSound(_swing_sound)
 	rl.UnloadSound(_magic_sound)
+	rl.UnloadSound(_hit_sound)
+	rl.UnloadSound(_drink_sound)
 	rl.CloseAudioDevice()
 	rl.UnloadTexture(_atlas_texture)
 	free(_font.glyphs)
@@ -344,10 +381,12 @@ shutdown :: proc() {
 		delete(msg)
 	}
 	queue.destroy(&_msg_queue)
+	queue.destroy(&_sound_queue)
 	rl.UnloadTexture(_font_atlas)
 	rl.CloseWindow()
 }
 
+/* Entity Spawn Functions */
 spawn :: proc {
 	spawn_mobile,
 	spawn_consumable,
@@ -369,62 +408,6 @@ spawn_consumable :: proc(cons_id: Consumable_ID) -> ObjId {
 	return cons.id
 }
 
-/* Custom Iterators */
-
-EntityIterator :: struct {
-	index: int,
-	data:  []ObjId,
-}
-
-make_entity_iterator :: proc(data: []ObjId) -> EntityIterator {
-	return {data = data}
-}
-
-entities_at_pos_comp :: proc(
-	it: ^EntityIterator,
-	pos: Point,
-	$T: typeid,
-) -> (
-	val: EntityInst(T),
-	idx: int,
-	cond: bool,
-) {
-	cond = it.index < len(it.data)
-
-	for ; cond; cond = it.index < len(it.data) {
-		e, ok := entity_get_comp(it.data[it.index])
-		if !ok || e.pos != pos {
-			it.index += 1
-			continue
-		}
-
-		val = e
-		idx = it.index
-		it.index += 1
-		break
-	}
-
-	return
-}
-
-entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: int, cond: bool) {
-	cond = it.index < len(it.data)
-
-	for ; cond; cond = it.index < len(it.data) {
-		e := entity_get(it.data[it.index])
-		if e.pos != pos {
-			it.index += 1
-			continue
-		}
-
-		val = e
-		idx = it.index
-		it.index += 1
-		break
-	}
-
-	return
-}
 
 /* Messaging */
 
@@ -469,11 +452,23 @@ main :: proc() {
 	}
 
 	running := true
+	cur_snd: rl.Sound
 
 	for running {
 		rl.UpdateMusicStream(_dungeon_music)
 		running = update()
 		draw()
+		if queue.len(_sound_queue) > 0 && !rl.IsSoundPlaying(cur_snd) {
+			snd_name := queue.pop_front(&_sound_queue)
+			new_snd := Sounds[snd_name]
+			if new_snd == cur_snd {
+				rl.SetSoundPitch(new_snd, random_pitch())
+			} else {
+				rl.SetSoundPitch(new_snd, 1)
+			}
+			cur_snd = new_snd
+			rl.PlaySound(cur_snd)
+		}
 		free_all(context.temp_allocator)
 	}
 }

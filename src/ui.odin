@@ -18,6 +18,7 @@ COLOR_TARGET: rl.Color = {192, 0, 0, 255}
 /* other UI constants */
 ITEM_LIST_Y :: 80
 
+
 Atlas_Tile :: enum {
 	Hero,
 	Floor,
@@ -338,7 +339,8 @@ highlight_hover :: proc() {
 
 tooltip :: proc(e_id: ObjId) {
 	text_size := f32(TILE_SIZE * 3 / 4)
-	border :: 1
+	border :: 2
+	roundness :: 0.2
 	padding := text_size / 2
 	e := entity_get(e_id)
 	s_pos := loc_to_screen(e.pos)
@@ -350,7 +352,7 @@ tooltip :: proc(e_id: ObjId) {
 		(desc_m.y + border) * 3,
 	}
 	rl.DrawRectangleRec(rect, rl.BLACK)
-	rl.DrawRectangleLinesEx(rect, border, COLOR_UI_TEXT)
+	rl.DrawRectangleRoundedLinesEx(rect, roundness, 0, border, COLOR_UI_TEXT)
 	rl.DrawTextEx(_font, e.name, {rect.x + border, rect.y + border}, text_size, 0, COLOR_UI_TEXT)
 	rl.DrawTextEx(
 		_font,

@@ -113,6 +113,7 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 				)
 			}
 			add_msg("%s strikes a brilliant blow!", attacker.name)
+			play_sound(.Hit)
 			system_mob_take_damage(defender, dmg)
 			return
 		}
@@ -127,6 +128,7 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 			when ODIN_DEBUG {
 				log.infof("COMBAT: %v fails to dodge", defender.name)
 			}
+			play_sound(.Hit)
 			system_mob_take_damage(defender, dmg)
 		}
 	} else {

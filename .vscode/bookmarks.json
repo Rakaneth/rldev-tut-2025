@@ -9,27 +9,47 @@
 					"label": ""
 				},
 				{
-					"line": 35,
+					"line": 44,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 59,
+					"line": 72,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 371,
-					"column": 0,
+					"line": 123,
+					"column": 10,
 					"label": ""
 				},
 				{
-					"line": 428,
+					"line": 214,
 					"column": 15,
 					"label": ""
 				},
 				{
-					"line": 442,
+					"line": 337,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 363,
+					"column": 15,
+					"label": ""
+				},
+				{
+					"line": 388,
+					"column": 28,
+					"label": ""
+				},
+				{
+					"line": 411,
+					"column": 15,
+					"label": ""
+				},
+				{
+					"line": 425,
 					"column": 0,
 					"label": ""
 				}
@@ -86,6 +106,16 @@
 				{
 					"line": 9,
 					"column": 12,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "src/entity.odin",
+			"bookmarks": [
+				{
+					"line": 356,
+					"column": 0,
 					"label": ""
 				}
 			]

@@ -13,3 +13,7 @@ rand_next_int :: proc(low, high: int) -> int {
 rand_next_bool :: proc() -> bool {
 	return rand.float32() > 0.5
 }
+
+rand_next_float :: proc() -> f32 {
+	return rand.float32()
+}
