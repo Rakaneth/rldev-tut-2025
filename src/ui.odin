@@ -376,7 +376,7 @@ draw_messages :: proc() {
 	rl.DrawRectangleLinesEx(rect, 2, COLOR_UI_TEXT)
 	msg_q_len := queue.len(_msg_queue)
 	for i in 0 ..< msg_q_len {
-		idx := (uint(i) + _msg_queue.offset) % uint(msg_q_len)
+		idx := (uint(i) + _msg_queue.offset) % uint(MSG_BUFFER_LEN)
 		msg := _msg_queue_data[idx]
 		rl.DrawTextEx(_font, msg, {2, f32(i) * font_size + 2}, font_size, 0, COLOR_UI_TEXT)
 	}

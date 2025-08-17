@@ -60,6 +60,8 @@ system_mob_take_damage :: proc(e_mob: EntityInstMut(Mobile), dmg: int) {
 	when ODIN_DEBUG {
 		log.infof("[SYSTEM] %v takes %v damage", e_mob.name, dmg)
 	}
+	add_msg("%s takes %d damage", e_mob.name, dmg)
+	if system_is_slain(e_mob.type^) do mobile_on_death(e_mob.id)
 	_damage = true
 }
 
@@ -71,6 +73,7 @@ system_mob_heal :: proc(e_mob: EntityInstMut(Mobile), amt: int) -> int {
 	when ODIN_DEBUG {
 		log.infof("[SYSTEM] %v healed for %v (real %v)", e_mob.name, amt, real_healed)
 	}
+	add_msg("%s heals %d damage", e_mob.name, real_healed)
 	return real_healed
 
 }
@@ -109,6 +112,7 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 					attacker.name,
 				)
 			}
+			add_msg("%s strikes a brilliant blow!", attacker.name)
 			system_mob_take_damage(defender, dmg)
 			return
 		}
@@ -118,6 +122,7 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 			when ODIN_DEBUG {
 				log.infof("COMBAT: %v dodges, gaining %v fatigue", defender.name, dmg)
 			}
+			add_msg("%s dodges the attack!", defender.name)
 		} else {
 			when ODIN_DEBUG {
 				log.infof("COMBAT: %v fails to dodge", defender.name)
@@ -131,7 +136,9 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 			when ODIN_DEBUG {
 				log.infof("COMBAT: %v rolls a DEMON on attack! Increased fatigue!", attacker.name)
 			}
+			add_msg("%s fumbles!", attacker.name)
 		}
+		add_msg("%s misses the attack!", attacker.name)
 		when ODIN_DEBUG {
 			log.infof(
 				"COMBAT: %v misses the attack with a roll of %v (test %v of %v)",
@@ -156,11 +163,13 @@ system_cast_lb :: proc(caster, target: EntityInstMut(Mobile)) {
 	demon := cast_roll == 20
 	dragon := cast_roll == 1
 	dmg: int
+	add_msg("%s casts lightning bolt at %s", caster.name, target.name)
 	switch {
 	case demon:
 		when ODIN_DEBUG {
 			log.infof("[SYSTEM] %v MISCASTS lightning bolt at %v!", caster.name, target.name)
 		}
+		add_msg("%s miscasts the spell!", caster.name)
 		dmg = system_roll_dice(6, 2)
 		system_mob_take_damage(caster, dmg)
 	case dragon:
@@ -171,17 +180,16 @@ system_cast_lb :: proc(caster, target: EntityInstMut(Mobile)) {
 				target.name,
 			)
 		}
+		add_msg("%s casts the spell flawlessly!", caster.name)
 		dmg = system_roll_dice(6, 4)
 		system_mob_take_damage(target, dmg)
 	case cast_ok:
-		when ODIN_DEBUG {
-			log.infof("[SYSTEM] %v casts lightning bolt! at %v!", caster.name, target.name)
-		}
 		dmg = system_roll_dice(6, 3)
 		if save_roll, saved := system_stat_test(target.type^, .AG); saved {
 			when ODIN_DEBUG {
 				log.infof("[SYSTEM] %v saves against the lightning bolt!", target.name)
 			}
+			add_msg("%s avoids the brunt of the bolt!", target.name)
 			system_mob_take_damage(target, dmg / 2)
 		} else {
 			when ODIN_DEBUG {
@@ -196,11 +204,13 @@ system_cast_lb :: proc(caster, target: EntityInstMut(Mobile)) {
 		when ODIN_DEBUG {
 			log.infof("[SYSTEM] %v fumbles the lightning bolt spell", caster.name)
 		}
+		add_msg("%s fumbles the spell!", caster.name)
 		dmg = system_roll_dice(6, 2)
 		if save_roll, saved := system_stat_test(target.type^, .AG); saved {
 			when ODIN_DEBUG {
 				log.infof("[SYSTEM] %v saves against the lightning bolt!", target.name)
 			}
+			add_msg("%s avoids the brunt of the bolt!", target.name)
 			system_mob_take_damage(target, dmg / 2)
 		} else {
 			when ODIN_DEBUG {

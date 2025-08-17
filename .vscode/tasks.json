@@ -16,6 +16,22 @@
                     "debug"
                 ]
             }
+        },
+        {
+            "label": "build-release",
+            "type": "shell",
+            "linux": {
+                "command": "./build.sh",
+                "args": [
+                    "release"
+                ]
+            },
+            "windows": {
+                "command": ".\\build.ps1",
+                "args": [
+                    "release"
+                ]
+            }
         }
     ]
 }

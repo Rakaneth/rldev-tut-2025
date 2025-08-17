@@ -430,7 +430,7 @@ entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: i
 
 //ALLOCATES a new cstring, uses `rl.TextFormat` under the hood
 add_msg :: proc(msg: cstring, args: ..any) {
-	formatted := strings.clone_from_cstring(rl.TextFormat(msg, args))
+	formatted := strings.clone_from_cstring(rl.TextFormat(msg, ..args))
 
 	if queue.len(_msg_queue) >= MSG_BUFFER_LEN {
 		to_delete := queue.pop_back(&_msg_queue)

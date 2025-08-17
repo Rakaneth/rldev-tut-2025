@@ -188,6 +188,16 @@ mob_bump :: proc(bumper_id: ObjId, bumped_id: ObjId) {
 	if bumper_id == PLAYER_ID || bumped_id == PLAYER_ID {
 		attacker := entity_get_comp_mut(bumper_id, Mobile)
 		defender := entity_get_comp_mut(bumped_id, Mobile)
+		attacker_visible := is_visible_to_player(bumper_id)
+		defender_visible := is_visible_to_player(bumped_id)
+		switch {
+		case attacker_visible && defender_visible:
+			add_msg("%s attacks %s!", attacker.name, defender.name)
+		case attacker_visible:
+			add_msg("%s attacks something!", attacker.name)
+		case defender_visible:
+			add_msg("Something attacks %s!", defender.name)
+		}
 		system_basic_attack(attacker, defender)
 	}
 }
@@ -220,14 +230,18 @@ is_visible_to_player :: proc {
 
 entity_pick_up_item :: proc(grabber: ObjId, grabbed: ObjId) {
 	grabber_entity := entity_get_mut(grabber)
+	grabbed_name := entity_get(grabbed).name
 	if grabber_entity.inventory.capacity > len(grabber_entity.inventory.items) {
 		append(&grabber_entity.inventory.items, grabbed)
 		gamemap_remove_entity(&_cur_map, grabbed)
 	}
 	when ODIN_DEBUG {
-		grabbed_name := entity_get(grabbed).name
+
 		log.infof("%v picks up %v at %v", grabber_entity.name, grabbed_name, grabber_entity.pos)
 		log.infof("%v's inventory ids: %v", grabber_entity.name, grabber_entity.inventory.items)
+	}
+	if is_visible_to_player(grabber) {
+		add_msg("%s picks up %s", grabber_entity.name, grabbed_name)
 	}
 }
 
@@ -303,5 +317,14 @@ entity_inv_remove_item :: proc(e_id: ObjId, item_id: ObjId) {
 		unordered_remove(&entity.inventory.items, idx)
 		item := entity_get_mut(item_id)
 		entity_remove(item)
+	}
+}
+
+mobile_on_death :: proc(dead_id: ObjId) {
+	dead_e := entity_get_mut(dead_id)
+	add_msg("%s is slain!", dead_e.name)
+	if dead_id != PLAYER_ID {
+		gamemap_remove_entity(&_cur_map, dead_id)
+		entity_remove(dead_e)
 	}
 }
