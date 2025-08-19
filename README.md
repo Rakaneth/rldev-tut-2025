@@ -16,8 +16,8 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 * [x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
 * [x] Week 3 - Field of View, Placing Enemies and Kicking Them
 * [x] Week 4 - Doing and Taking Damage, Interface
-* [x] Week 5 - **Items and Inventory, Ranged Scrolls and Targeting**
-* [ ] Week 6 - Saving and Loading, Delving into the Dungeon
+* [x] Week 5 - Items and Inventory, Ranged Scrolls and Targeting
+* [ ] **Week 6 - Saving and Loading, Delving into the Dungeon**
 * [ ] Week 7 - Increasing Difficulty, Gearing Up
 * [ ] Week 8 - Conclusion
 
@@ -241,3 +241,6 @@ The messaging system is in. The last message produced by the game is displayed o
 
 https://github.com/user-attachments/assets/3e76117a-9fb2-47a4-8d68-2c31d8aafc7b
 
+## Week 6 (2025-08-19)
+
+Here it is. The bugaboo of saving and loading. Not sure how I want to tackle this just yet. In the meantime, I will add a structure for other dungeons which I think will be simple to add, given the groundwork I have already laid.
