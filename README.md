@@ -241,6 +241,10 @@ The messaging system is in. The last message produced by the game is displayed o
 
 https://github.com/user-attachments/assets/3e76117a-9fb2-47a4-8d68-2c31d8aafc7b
 
-## Week 6 (2025-08-19)
+## Week 6 (2025-08-19) Saving, Loading, Delving
 
 Here it is. The bugaboo of saving and loading. Not sure how I want to tackle this just yet. In the meantime, I will add a structure for other dungeons which I think will be simple to add, given the groundwork I have already laid.
+
+### 2025-08-20
+
+CBOR to the rescue! CBOR is a binary format that can be readily converted to/from JSON (at least, in Odin) and, for this project, seems to require little effort to include. Initial tests show successfully saving and restoring the entities to a file. Full marshalling/unmarshalling with little fuss, as nothing difficult is being stored on my entities. Once I get more maps in, I will test saving and loading maps.

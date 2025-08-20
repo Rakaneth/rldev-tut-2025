@@ -2,9 +2,12 @@ package main
 
 import "core:c"
 import "core:container/queue"
+import "core:encoding/cbor"
 import "core:fmt"
+import "core:io"
 import "core:log"
 import "core:mem"
+import "core:os"
 import "core:strings"
 import rl "vendor:raylib"
 
@@ -68,7 +71,6 @@ _target: union {
 _msg_queue_data: [MSG_BUFFER_LEN]cstring
 _msg_queue: queue.Queue(cstring)
 _sound_queue: queue.Queue(Sound_Name)
-
 
 /* Setup */
 
@@ -167,6 +169,10 @@ init :: proc() {
 	)
 	rl.SetMusicVolume(_dungeon_music, 0.3)
 	queue.init(&_sound_queue)
+
+	if os.exists("./test.dat") {
+		load_game()
+	}
 
 	// first_floor := map_make_recursive(39, 29, 1)
 	// first_floor := map_make_arena(21, 21)
@@ -363,6 +369,12 @@ draw :: proc() {
 
 /* Game Shutdown */
 shutdown :: proc() {
+	if err := save_game(); err != .None {
+		when ODIN_DEBUG {
+			log.errorf("[SHUTDOWN] Error saving game: %v", err)
+		}
+	}
+
 	gamemap_destroy(&_cur_map)
 	for _, &e in _entity_store {
 		entity_destroy(&e)
@@ -423,10 +435,64 @@ add_msg :: proc(msg: cstring, args: ..any) {
 	delete(formatted)
 }
 
+/* Saving / Loading */
+
+SaveLoad_Err :: enum {
+	None,
+	Failed_Entity_Marshal,
+	Failed_Entity_Write,
+	Failed_Entity_Unmarshal,
+	Failed_Entity_Read,
+}
+
+save_game :: proc() -> (err: SaveLoad_Err) {
+	data, marshal_err := cbor.marshal_into_bytes(_entity_store)
+
+	if marshal_err != nil {
+		when ODIN_DEBUG {
+			log.error("[SAVE] Failed to marshal entities")
+		}
+		err = .Failed_Entity_Marshal
+		return
+	}
+
+	if !os.write_entire_file("test.dat", data) {
+		when ODIN_DEBUG {
+			log.error("[SAVE] Failed to write entity file")
+		}
+		err = .Failed_Entity_Write
+		return
+	}
+
+	return
+}
+
+load_game :: proc() -> (err: SaveLoad_Err) {
+	data, read_ok := os.read_entire_file("./test.dat")
+	if !read_ok {
+		when ODIN_DEBUG {
+			log.error("[LOAD] Failed to read entity file!")
+		}
+		err = .Failed_Entity_Read
+		return
+	}
+	defer delete(data)
+
+	unmarshal_err := cbor.unmarshal_from_bytes(data, &_entity_store)
+	if unmarshal_err != nil {
+		when ODIN_DEBUG {
+			log.error("[LOAD] Failed to unmarshal entities!")
+		}
+		err = .Failed_Entity_Unmarshal
+		return
+	}
+
+	return
+}
+
 /* Main */
 
 main :: proc() {
-
 	when ODIN_DEBUG {
 		track: mem.Tracking_Allocator
 		logger := log.create_console_logger(log.Level.Info)
