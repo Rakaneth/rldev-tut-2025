@@ -247,4 +247,4 @@ Here it is. The bugaboo of saving and loading. Not sure how I want to tackle thi
 
 ### 2025-08-20
 
-CBOR to the rescue! CBOR is a binary format that can be readily converted to/from JSON (at least, in Odin) and, for this project, seems to require little effort to include. Initial tests show successfully saving and restoring the entities to a file. Full marshalling/unmarshalling with little fuss, as nothing difficult is being stored on my entities. Once I get more maps in, I will test saving and loading maps.
+CBOR to the rescue! CBOR is a binary format that can be readily converted to/from JSON (at least, in Odin) and, for this project, seems to require little effort to include. Initial tests show successfully saving and restoring the entities to a file. Full marshalling/unmarshalling with little fuss, as nothing difficult is being stored on entities. Once I get more maps in, I will test saving and loading maps.
