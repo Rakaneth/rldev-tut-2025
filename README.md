@@ -248,3 +248,11 @@ Here it is. The bugaboo of saving and loading. Not sure how I want to tackle thi
 ### 2025-08-20
 
 CBOR to the rescue! CBOR is a binary format that can be readily converted to/from JSON (at least, in Odin) and, for this project, seems to require little effort to include. Initial tests show successfully saving and restoring the entities to a file. Full marshalling/unmarshalling with little fuss, as nothing difficult is being stored on entities. Once I get more maps in, I will test saving and loading maps.
+
+### 2025-08-21
+
+Saving / Loading are IN! Turns out that, at least for this use case, CBOR is as painless as Python's `pickle.` I did have to come up with a few procedures to clone `GameMap` and `Entity`, but basic saving and loading are implemented!
+
+The dungeon now has 5 floors (subject to change), and the player can navigate to the very bottom!
+
+Now to do a bit of content generation and make more enemies and items.

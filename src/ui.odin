@@ -202,7 +202,7 @@ draw_map :: proc(m: TerrainData) {
 			}
 			if is_visible_to_player(pos) {
 				draw_cell(to_draw, pos, rl.WHITE)
-			} else if gamemap_is_explored(_cur_map, pos) {
+			} else if gamemap_is_explored(get_cur_map(), pos) {
 				draw_cell(to_draw, pos, rl.BLUE)
 			}
 		}
@@ -330,7 +330,7 @@ get_world_mouse_pos :: proc() -> Point {
 
 highlight_hover :: proc() {
 	mouse_map_pos := get_world_mouse_pos()
-	top_e, num_e := gamemap_get_entity_at(_cur_map, mouse_map_pos)
+	top_e, num_e := gamemap_get_entity_at(get_cur_map(), mouse_map_pos)
 	if num_e == 1 {
 		highlight(top_e.id, COLOR_UI_TEXT)
 		tooltip(top_e.id)
