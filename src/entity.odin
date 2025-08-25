@@ -34,6 +34,7 @@ Mobile :: struct {
 	atk_stat:  Stat,
 	base_hp:   int,
 	mobile_id: Mobile_ID,
+	effects:   [dynamic]Effect,
 }
 
 Consumable :: struct {
@@ -108,6 +109,7 @@ entity_destroy :: proc(e: ^Entity, allocator := context.allocator) {
 	#partial switch &variant in e.etype {
 	case Mobile:
 		grid_destroy(&variant.visible)
+		delete(variant.effects)
 	}
 }
 

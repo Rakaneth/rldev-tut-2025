@@ -207,12 +207,13 @@ Various game actions, such as attacking, are governed by these four stats. Basic
 * Some monsters and weapons may test AG to attack.
 * Some monster attacks may come with secondary effects.
 
-#### HP and Stamina (partially coded)
+#### HP and Stamina
 
 A creature with 0 HP is **slain.**
-A creature with Fatigue >= Stamina is **exhausted** and must **recover**.
+A creature with Fatigue >= Stamina is **exhausted**.
+An exhausted creature receives a penalty to all rolls equal to (Fatigue - Stamina).
 
-**Recovering** takes an action and removes (WL / 2) Fatigue.
+**Recovering** takes an action and removes (max(HD, WL) / 2) Fatigue.
 
 HP is influenced by HD.
 Stamina is influenced by HD and WL.

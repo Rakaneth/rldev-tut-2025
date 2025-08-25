@@ -24,6 +24,7 @@ BP_Mobile :: struct {
 	wl:         [2]int,
 	base_atk:   Attack,
 	atk_stat:   Stat,
+	tier:       int,
 }
 
 BP_Consumable :: struct {
@@ -31,9 +32,44 @@ BP_Consumable :: struct {
 	using base: BP_Base,
 }
 
+BP_Weapon :: struct {
+	atk_mod: int,
+	atk:     Attack,
+}
+
+BP_Armor :: struct {
+	doj_mod:    int,
+	protection: int,
+}
+
 Mobile_ID :: enum {
 	Hero,
+	Aquator,
 	Bat,
+	Centaur,
+	Dragon,
+	Emu,
+	Flytrap,
+	Griffin,
+	Hobgoblin,
+	IceMonster,
+	Jabberwock,
+	Kestrel,
+	Leprechaun,
+	Medusa,
+	Nymph,
+	Orc,
+	Phantom,
+	Quagga,
+	Rattlesnake,
+	Snake,
+	Troll,
+	UmberHulk,
+	Vampire,
+	Wraith,
+	Xeroc,
+	Yeti,
+	Zombie,
 }
 
 Consumable_ID :: enum {
@@ -44,6 +80,27 @@ Consumable_ID :: enum {
 	Potion_AG,
 	Potion_WL,
 }
+
+Weapon_ID :: enum {
+	Sword_Brittle,
+	Sword_Iron,
+	Sword_Steel,
+	Sword_Mithril,
+	Staff_Cammock,
+	Staff_Oak,
+	Staff_Ash,
+	Staff_Thorn,
+	Staff_Mage,
+}
+
+Armor_ID :: enum {
+	Cloth,
+	Leather,
+	Chain,
+	Lamellar,
+	Breastplate,
+}
+
 
 @(rodata)
 MOBILES := [Mobile_ID]BP_Mobile {
@@ -61,6 +118,7 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		wl = {10, 10},
 		base_atk = {1, 2},
 	},
+	.Aquator = {},
 	.Bat = {
 		name = "Bat",
 		desc = "A squeaky Bat",
@@ -71,10 +129,49 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		st = {5, 8},
 		ag = {12, 15},
 		hd = {8, 10},
-		wl = {5, 5},
+		wl = {1, 1},
 		base_atk = {1, 2},
 		atk_stat = .AG,
+		tier = 1,
 	},
+	.Centaur = {},
+	.Dragon = {},
+	.Emu = {},
+	.Flytrap = {},
+	.Griffin = {},
+	.Hobgoblin = {},
+	.IceMonster = {},
+	.Jabberwock = {},
+	.Kestrel = {
+		name = "Kestrel",
+		desc = "A beautiful bird somehow trapped in the dungeon",
+		tile = .Kestrel,
+		color = rl.WHITE,
+		hp = 5,
+		vision = 8,
+		st = {1, 5},
+		ag = {12, 15},
+		hd = {5, 8},
+		wl = {1, 1},
+		base_atk = {1, 1},
+		atk_stat = .AG,
+		tier = 1,
+	},
+	.Leprechaun = {},
+	.Medusa = {},
+	.Nymph = {},
+	.Orc = {},
+	.Phantom = {},
+	.Quagga = {},
+	.Rattlesnake = {},
+	.Snake = {},
+	.Troll = {},
+	.UmberHulk = {},
+	.Vampire = {},
+	.Wraith = {},
+	.Xeroc = {},
+	.Yeti = {},
+	.Zombie = {},
 }
 
 @(rodata)

@@ -41,7 +41,8 @@ system_roll_fallen_hero_stats :: proc(out: []int) {
 }
 
 system_stat_test :: proc(mob: Mobile, stat: Stat) -> (int, bool) {
-	r := system_rolld20()
+	ftg_penalty := max(mob.fatigue - mob.stamina, 0)
+	r := system_rolld20() + ftg_penalty
 	return r, mob.stats[stat] >= r
 }
 
@@ -51,6 +52,10 @@ system_is_slain :: proc(mob: Mobile) -> bool {
 
 system_is_exhausted :: proc(mob: Mobile) -> bool {
 	return mob.stamina <= mob.fatigue
+}
+
+system_rest :: proc(mob: ^Mobile) {
+	mob.fatigue -= max(mob.stats[.WL], mob.stats[.HD]) / 2
 }
 
 //Sets global: _damage

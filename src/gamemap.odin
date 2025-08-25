@@ -307,10 +307,10 @@ map_make_roomer :: proc(
 	m := grid_create(width, height, Terrain)
 	// grid_fill(&m, Terrain.Floor)
 	outer: for _ in 0 ..< tries {
-		new_x := rand_next_int(min_dim, m.width - min_dim)
-		new_y := rand_next_int(min_dim, m.height - min_dim)
-		new_w := rand_next_int(min_dim, max_dim)
-		new_h := rand_next_int(min_dim, max_dim)
+		new_x := rand_next_int(1, m.width - min_dim)
+		new_y := rand_next_int(1, m.height - min_dim)
+		new_w := rand_next_int(1, max_dim)
+		new_h := rand_next_int(1, max_dim)
 		new_r := rect_from_xywh(new_x, new_y, new_w, new_h)
 
 		if rect_in_bounds(m, new_r) {
