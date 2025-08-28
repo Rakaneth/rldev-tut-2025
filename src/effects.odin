@@ -16,6 +16,7 @@ effect_merge :: proc(eff: ^Effect, to_merge: Effect) {
 	switch to_merge.effect_id {
 	case .Burn:
 		eff.duration += to_merge.duration
+		eff.stacks = max(eff.stacks, to_merge.stacks)
 	case .Paralyze:
 		eff.duration = to_merge.duration
 	case .Poison:
@@ -50,16 +51,37 @@ effect_apply :: proc(eff: Effect, mob: EntityInstMut(Mobile)) {
 	}
 }
 
-//returns true if effect has run out
-effect_tick :: proc(eff: ^Effect, mob: EntityInstMut(Mobile)) -> bool {
-	eff.duration -= 1
-	#partial switch eff.effect_id {
-	case .Burn:
-		add_msg("%s burns!", mob.name)
-		system_mob_take_damage(mob, eff.stacks)
-	case .Poison:
-		add_msg("%s suffers from poison!", mob.name)
-		system_mob_take_damage(mob, eff.duration)
+//sets eff.to_remove to true if duration runs out
+effect_tick :: proc(eff: ^Effect, mob: EntityInstMut(Mobile)) {
+	if eff.duration > 0 {
+		#partial switch eff.effect_id {
+		case .Burn:
+			add_msg("%s burns!", mob.name)
+			system_mob_take_damage(mob, eff.stacks)
+		case .Poison:
+			add_msg("%s suffers from poison!", mob.name)
+			system_mob_take_damage(mob, eff.duration)
+		}
+		eff.duration -= 1
+		if eff.duration <= 0 {
+			effect_remove(eff^, mob)
+		}
 	}
-	return eff.duration <= 0
+}
+
+effect_remove :: proc(eff: Effect, mob: EntityInstMut(Mobile)) {
+	for meff, i in mob.effects {
+		if eff.effect_id == meff.effect_id {
+			switch eff.effect_id {
+			case .Burn:
+				add_msg("%s is no longer burning.", mob.name)
+			case .Paralyze:
+				add_msg("%s is no longer paralyzed.", mob.name)
+			case .Poison:
+				add_msg("%s is no longer poisoned.", mob.name)
+			}
+			ordered_remove(&mob.effects, i)
+			return
+		}
+	}
 }

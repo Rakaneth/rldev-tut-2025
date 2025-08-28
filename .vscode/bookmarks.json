@@ -24,37 +24,37 @@
 					"label": ""
 				},
 				{
-					"line": 263,
+					"line": 271,
 					"column": 0,
 					"label": ""
 				},
 				{
-					"line": 391,
+					"line": 402,
 					"column": 10,
 					"label": ""
 				},
 				{
-					"line": 418,
+					"line": 429,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 453,
+					"line": 464,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 476,
+					"line": 487,
 					"column": 1,
 					"label": ""
 				},
 				{
-					"line": 490,
+					"line": 501,
 					"column": 22,
 					"label": ""
 				},
 				{
-					"line": 580,
+					"line": 585,
 					"column": 10,
 					"label": ""
 				}
@@ -114,7 +114,7 @@
 			"path": "src/ui.odin",
 			"bookmarks": [
 				{
-					"line": 9,
+					"line": 10,
 					"column": 12,
 					"label": ""
 				}

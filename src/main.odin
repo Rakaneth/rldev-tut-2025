@@ -201,6 +201,14 @@ init :: proc() {
 
 	_dam_timer = DAMAGE_TIMER
 	mobile_update_fov(PLAYER_ID)
+
+	//testing
+	poison := Effect {
+		duration  = 3,
+		effect_id = .Poison,
+	}
+	player_mob := entity_get_comp_mut(PLAYER_ID, Mobile)
+	effect_apply(poison, player_mob)
 }
 
 get_player :: proc() -> Entity {
@@ -266,6 +274,7 @@ update :: proc() -> bool {
 	dt := rl.GetFrameTime()
 	moved: MoveResult = .NoMove
 	player := get_player()
+	player_mob := entity_get_comp_mut(PLAYER_ID, Mobile)
 	cur_map := get_cur_map()
 
 	#partial switch _state {
@@ -299,7 +308,7 @@ update :: proc() -> bool {
 			}
 		case rl.IsMouseButtonPressed(rl.MouseButton.LEFT):
 			mouse_map_pos := get_world_mouse_pos()
-			if maybe_target, target_ok := gamemap_get_mob_at(get_cur_map(), mouse_map_pos);
+			if maybe_target, target_ok := gamemap_get_mob_at(cur_map, mouse_map_pos);
 			   target_ok && is_visible_to_player(mouse_map_pos) {
 				_target = maybe_target.id
 			}
@@ -344,11 +353,12 @@ update :: proc() -> bool {
 		}
 
 	case .Move:
+		damage_step := false
 		mobile_update_fov(PLAYER_ID)
-		gamemap_dmap_update(get_cur_map_mut(), get_player().pos)
+		mobile_tick_effects(PLAYER_ID)
+		gamemap_dmap_update(get_cur_map_mut(), player.pos)
 		e_moved := MoveResult.NoMove
 
-		damage_step := false
 		for e_id in cur_map.entities {
 			if e_mob, e_mob_ok := entity_get_comp(e_id, Mobile); e_mob_ok && e_id != PLAYER_ID {
 				mobile_update_fov(e_id)
@@ -356,6 +366,7 @@ update :: proc() -> bool {
 					mob_move_dir := dmap_get_next_step(cur_map.enemy_dmap, e_mob.pos)
 					e_moved = entity_move_by(e_id, mob_move_dir)
 				}
+				mobile_tick_effects(e_id)
 			}
 		}
 		if _damage {
@@ -502,7 +513,6 @@ GameSave :: struct {
 	entities:    map[ObjId]Entity,
 	maps:        []GameMap,
 	cur_map_idx: int,
-	messages:    []cstring,
 }
 
 save_game :: proc(loc := #caller_location) -> (err: SaveLoad_Err) {
@@ -510,7 +520,6 @@ save_game :: proc(loc := #caller_location) -> (err: SaveLoad_Err) {
 	gs.entities = _entity_store
 	gs.cur_map_idx = _cur_map_idx
 	gs.maps = _maps[:]
-	gs.messages = _msg_queue_data[:]
 
 	data, marshal_err := cbor.marshal_into_bytes(gs, loc = loc)
 	defer delete(data)
@@ -567,10 +576,6 @@ load_game :: proc(loc := #caller_location) -> (err: SaveLoad_Err) {
 
 	for &m, i in gs.maps {
 		_maps[i] = gamemap_clone(m)
-	}
-
-	for msg, i in gs.messages {
-		_msg_queue_data[i] = clone_cstring(msg)
 	}
 
 	_cur_map_idx = gs.cur_map_idx

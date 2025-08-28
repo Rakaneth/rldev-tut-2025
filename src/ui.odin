@@ -2,6 +2,7 @@ package main
 
 import "core:c"
 import "core:container/queue"
+import "core:fmt"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
@@ -404,6 +405,7 @@ tooltip :: proc(e_id: ObjId) {
 	rl.DrawRectangleRec(rect, rl.BLACK)
 	rl.DrawRectangleRoundedLinesEx(rect, roundness, 0, border, COLOR_UI_TEXT)
 	rl.DrawTextEx(_font, e.name, {rect.x + border, rect.y + border}, text_size, 0, COLOR_UI_TEXT)
+	draw_effects(e_id, {rect.x + border, rect.y + text_size + border}, text_size)
 	rl.DrawTextEx(
 		_font,
 		e.desc,
@@ -431,5 +433,23 @@ draw_messages :: proc() {
 		idx := (uint(i) + _msg_queue.offset) % uint(MSG_BUFFER_LEN)
 		msg := _msg_queue_data[idx]
 		rl.DrawTextEx(_font, msg, {2, f32(i) * font_size + 2}, font_size, 0, COLOR_UI_TEXT)
+	}
+}
+
+draw_effects :: proc(e_id: ObjId, pos: rl.Vector2, font_size: f32) {
+	sb: strings.Builder
+	strings.builder_init(&sb)
+	defer strings.builder_destroy(&sb)
+	if mob, ok := entity_get_comp(e_id, Mobile); ok {
+		for eff, i in mob.effects {
+			fmt.sbprintf(&sb, "%v[%v]", eff.effect_id, eff.duration)
+			if eff.stacks > 0 {
+				fmt.sbprintf(&sb, " (%v)", eff.stacks)
+			}
+			if i < len(mob.effects) - 1 {
+				fmt.sbprint(&sb, ", ")
+			}
+		}
+		rl.DrawTextEx(_font, strings.to_cstring(&sb), pos, font_size, 0, rl.RED)
 	}
 }

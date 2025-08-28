@@ -121,18 +121,18 @@ entity_get_mut :: proc(id: ObjId) -> ^Entity {
 	return &_entity_store[id]
 }
 
-entity_get_comp :: proc(id: ObjId, $Type: typeid) -> (EntityInst(Type), bool) #optional_ok {
+entity_get_comp :: proc(id: ObjId, $Val: typeid) -> (EntityInst(Val), bool) #optional_ok {
 	maybe_e := _entity_store[id]
-	if comp, ok := maybe_e.etype.(Type); ok {
+	if comp, ok := maybe_e.etype.(Val); ok {
 		return {maybe_e, comp}, true
 	}
 
 	return {}, false
 }
 
-entity_get_comp_mut :: proc(id: ObjId, $Type: typeid) -> (EntityInstMut(Type), bool) #optional_ok {
+entity_get_comp_mut :: proc(id: ObjId, $Val: typeid) -> (EntityInstMut(Val), bool) #optional_ok {
 	maybe_e := &_entity_store[id]
-	if comp, ok := &maybe_e.etype.(Type); ok {
+	if comp, ok := &maybe_e.etype.(Val); ok {
 		return {maybe_e, comp}, true
 	}
 
@@ -456,4 +456,12 @@ entity_clone :: proc(
 	}
 
 	return dpl
+}
+
+mobile_tick_effects :: proc(e_id: ObjId) {
+	if mob, mob_ok := entity_get_comp_mut(e_id, Mobile); mob_ok {
+		for &eff, i in mob.effects {
+			effect_tick(&eff, mob)
+		}
+	}
 }

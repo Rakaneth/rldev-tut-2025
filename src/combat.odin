@@ -60,7 +60,7 @@ system_rest :: proc(mob: ^Mobile) {
 
 //Sets global: _damage
 system_mob_take_damage :: proc(e_mob: EntityInstMut(Mobile), dmg: int) {
-	e_mob.damage = dmg
+	e_mob.damage += dmg
 	e_mob.cur_hp -= dmg
 	when ODIN_DEBUG {
 		log.infof("[SYSTEM] %v takes %v damage", e_mob.name, dmg)
