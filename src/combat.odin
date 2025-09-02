@@ -41,7 +41,8 @@ system_roll_fallen_hero_stats :: proc(out: []int) {
 }
 
 system_stat_test :: proc(mob: Mobile, stat: Stat) -> (int, bool) {
-	r := system_rolld20()
+	ftg_penalty := max(mob.fatigue - mob.stamina, 0)
+	r := system_rolld20() + ftg_penalty
 	return r, mob.stats[stat] >= r
 }
 
@@ -53,9 +54,13 @@ system_is_exhausted :: proc(mob: Mobile) -> bool {
 	return mob.stamina <= mob.fatigue
 }
 
+system_rest :: proc(mob: ^Mobile) {
+	mob.fatigue -= max(mob.stats[.WL], mob.stats[.HD]) / 2
+}
+
 //Sets global: _damage
 system_mob_take_damage :: proc(e_mob: EntityInstMut(Mobile), dmg: int) {
-	e_mob.damage = dmg
+	e_mob.damage += dmg
 	e_mob.cur_hp -= dmg
 	when ODIN_DEBUG {
 		log.infof("[SYSTEM] %v takes %v damage", e_mob.name, dmg)
@@ -87,7 +92,18 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 	*/
 	if att_roll, hit := system_stat_test(attacker.type^, attacker.atk_stat); hit {
 		dragon := att_roll == 1
-		raw_dmg := rand_next_int(attacker.base_atk.x, attacker.base_atk.y)
+		base_atk := attacker.base_atk
+		on_hit: bool
+		if base_atk.on_hit > 0 {
+			on_hit = rand_next_float() <= base_atk.on_hit
+			if on_hit {
+				effect_apply(base_atk.on_hit_eff, defender)
+			}
+			when ODIN_DEBUG {
+				log.infof("[SYSTEM] On-hit procced by %v: %v", attacker.name, base_atk.on_hit_eff)
+			}
+		}
+		raw_dmg := rand_next_int(base_atk.dmg.x, base_atk.dmg.y)
 		str_bonus := attacker.atk_stat == .ST ? max(0, attacker.stats[.ST] - 16) : 0
 		dmg := raw_dmg + str_bonus
 

@@ -11,7 +11,7 @@ rand_next_int :: proc(low, high: int) -> int {
 }
 
 rand_next_bool :: proc() -> bool {
-	return rand.float32() > 0.5
+	return rand.int63() & 1 == 1
 }
 
 rand_next_float :: proc() -> f32 {

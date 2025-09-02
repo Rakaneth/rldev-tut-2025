@@ -2,9 +2,14 @@ package main
 
 import "core:c"
 import "core:container/queue"
+import "core:encoding/cbor"
 import "core:fmt"
+import "core:io"
 import "core:log"
+import "core:math/rand"
 import "core:mem"
+import "core:os"
+import "core:slice"
 import "core:strings"
 import rl "vendor:raylib"
 
@@ -24,6 +29,12 @@ DAMAGE_TIMER :: 0.3
 FONT_NUM_GLYPHS :: 73
 DMAP_SENTINEL :: 9999
 MSG_BUFFER_LEN :: 50
+NUM_FLOORS :: 5
+F0_MOBS :: 5
+F1_MOBS :: 10
+F2_MOBS :: 10
+F3_MOBS :: 13
+F4_MOBS :: 15
 
 GameState :: enum {
 	Input,
@@ -52,7 +63,8 @@ _hero_loc: Point
 // _hero_screen_pos: [2]f32
 // _hero_screen_to: [2]f32
 _state: GameState
-_cur_map: GameMap
+_cur_map_idx: int
+_maps: [NUM_FLOORS]GameMap
 _swing_sound: rl.Sound
 _magic_sound: rl.Sound
 _drink_sound: rl.Sound
@@ -68,7 +80,6 @@ _target: union {
 _msg_queue_data: [MSG_BUFFER_LEN]cstring
 _msg_queue: queue.Queue(cstring)
 _sound_queue: queue.Queue(Sound_Name)
-
 
 /* Setup */
 
@@ -168,19 +179,36 @@ init :: proc() {
 	rl.SetMusicVolume(_dungeon_music, 0.3)
 	queue.init(&_sound_queue)
 
-	// first_floor := map_make_recursive(39, 29, 1)
-	// first_floor := map_make_arena(21, 21)
-	first_floor := map_make_roomer(40, 30, 5)
-	_cur_map = gamemap_create(first_floor)
-	spawn(Mobile_ID.Hero, true)
-	spawn(Mobile_ID.Bat)
-	spawn(Consumable_ID.Potion_Healing)
-	spawn(Consumable_ID.Scroll_Lightning)
+	if os.exists("./test.dat") {
+		load_game()
+	} else {
+		first_floor := map_make_roomer(40, 30, 5)
+		second_floor := map_make_roomer(40, 30, 7)
+		third_floor := map_make_roomer(40, 30, 9)
+		fourth_floor := map_make_roomer(40, 30, 11)
+		fifth_floor := map_make_recursive(39, 29)
+
+		_maps[0] = gamemap_create(first_floor)
+		_maps[1] = gamemap_create(second_floor)
+		_maps[2] = gamemap_create(third_floor)
+		_maps[3] = gamemap_create(fourth_floor)
+		_maps[4] = gamemap_create(fifth_floor)
+
+		build_floors()
+		spawn(Mobile_ID.Hero, 0, true)
+	}
 
 	queue.init_from_slice(&_msg_queue, _msg_queue_data[:])
 
 	_dam_timer = DAMAGE_TIMER
 	mobile_update_fov(PLAYER_ID)
+
+	//testing
+	poison := Effect {
+		duration  = 3,
+		effect_id = .Poison,
+	}
+	player_mob := entity_get_comp_mut(PLAYER_ID, Mobile)
 }
 
 get_player :: proc() -> Entity {
@@ -211,13 +239,71 @@ random_pitch :: proc() -> f32 {
 	return (r * 0.5) + 0.5
 }
 
+move_to_floor :: proc(floor_idx: int) {
+	player := get_player()
+	player_p := get_player_mut()
+	player_m := entity_get_comp_mut(player.id, Mobile)
+	gamemap_remove_entity(get_cur_map_mut(), player)
+	gamemap_add_entity(&_maps[floor_idx], player)
+	_cur_map_idx = floor_idx
+	new_map := get_cur_map()
+	player_p.pos = map_random_floor(new_map)
+	mobile_update_fov(PLAYER_ID)
+}
+
+spawn_monsters :: proc(floor_id: int) {
+	mob_check := rand_next_int(1, 100)
+	mob_to_spawn: Mobile_ID
+	mob_sets := [5]bit_set[Mobile_ID]{Tier0, Tier1, Tier2, Tier3, Tier4}
+	num_mobs := [5]int{F0_MOBS, F1_MOBS, F2_MOBS, F3_MOBS, F4_MOBS}
+	for _ in 0 ..< num_mobs[floor_id] {
+		switch {
+		case mob_check < 20:
+			if floor_id > 0 {
+				mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id - 1])
+			}
+
+		case mob_check >= 20 && mob_check < 70:
+			if floor_id < len(_maps) - 1 {
+				mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id])
+			}
+
+		case mob_check >= 70 && mob_check < 90:
+			mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id + 1])
+		case:
+			continue
+		}
+		if mob_to_spawn != .Hero {
+			spawn(mob_to_spawn, floor_id)
+		}
+	}
+}
+
+build_floors :: proc() {
+	for &m, i in _maps {
+		if i < len(_maps) - 1 {
+			map_add_stairs(&m.terrain)
+		}
+		spawn_monsters(i)
+	}
+}
+
+get_cur_map :: proc() -> GameMap {
+	return _maps[_cur_map_idx]
+}
+
+get_cur_map_mut :: proc() -> ^GameMap {
+	return &_maps[_cur_map_idx]
+}
+
 
 //Game Update. Should return false to stop the game
 update :: proc() -> bool {
 	dt := rl.GetFrameTime()
 	moved: MoveResult = .NoMove
 	player := get_player()
-
+	player_mob := entity_get_comp_mut(PLAYER_ID, Mobile)
+	cur_map := get_cur_map()
 
 	#partial switch _state {
 	case .Input:
@@ -233,20 +319,24 @@ update :: proc() -> bool {
 		case rl.IsKeyPressed(.D):
 			moved = entity_move_by(PLAYER_ID, .Right)
 		case rl.IsKeyPressed(.G):
-			for e_id in _cur_map.entities {
+			for e_id in get_cur_map().entities {
 				item := entity_get(e_id)
 				if e_id != PLAYER_ID && item.pos == player.pos {
 					entity_pick_up_item(PLAYER_ID, e_id)
 					moved = .Moved
 				}
 			}
-		case rl.IsKeyPressed(.H):
+		case rl.IsKeyPressed(.M):
 			_state = .Messages
 		case rl.IsKeyPressed(.I):
 			_state = .Item
+		case rl.IsKeyPressed(.ENTER):
+			if grid_get(cur_map.terrain, player.pos) == Terrain.StairsDown {
+				move_to_floor(_cur_map_idx + 1)
+			}
 		case rl.IsMouseButtonPressed(rl.MouseButton.LEFT):
 			mouse_map_pos := get_world_mouse_pos()
-			if maybe_target, target_ok := gamemap_get_mob_at(_cur_map, mouse_map_pos);
+			if maybe_target, target_ok := gamemap_get_mob_at(cur_map, mouse_map_pos);
 			   target_ok && is_visible_to_player(mouse_map_pos) {
 				_target = maybe_target.id
 			}
@@ -291,17 +381,20 @@ update :: proc() -> bool {
 		}
 
 	case .Move:
-		mobile_update_fov(PLAYER_ID)
-		gamemap_dmap_update(&_cur_map, get_player().pos)
-		e_moved := MoveResult.NoMove
 		damage_step := false
-		for e_id in _cur_map.entities {
+		mobile_update_fov(PLAYER_ID)
+		mobile_tick_effects(PLAYER_ID)
+		gamemap_dmap_update(get_cur_map_mut(), player.pos)
+		e_moved := MoveResult.NoMove
+
+		for e_id in cur_map.entities {
 			if e_mob, e_mob_ok := entity_get_comp(e_id, Mobile); e_mob_ok && e_id != PLAYER_ID {
 				mobile_update_fov(e_id)
 				if is_visible(e_id, PLAYER_ID) {
-					mob_move_dir := dmap_get_next_step(_cur_map.enemy_dmap, e_mob.pos)
+					mob_move_dir := dmap_get_next_step(cur_map.enemy_dmap, e_mob.pos)
 					e_moved = entity_move_by(e_id, mob_move_dir)
 				}
+				mobile_tick_effects(e_id)
 			}
 		}
 		if _damage {
@@ -315,7 +408,7 @@ update :: proc() -> bool {
 		_dam_timer -= dt
 		if _dam_timer <= 0 {
 			_dam_timer += DAMAGE_TIMER
-			for e_id in _cur_map.entities {
+			for e_id in cur_map.entities {
 				if mob, mob_ok := entity_get_comp_mut(e_id, Mobile); mob_ok {
 					mob.damage = 0
 				}
@@ -340,10 +433,11 @@ draw :: proc() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
 	rl.BeginMode2D(_cam)
+	cur_map := get_cur_map()
 	#partial switch _state {
 	case .Input, .Item, .Move, .Damage:
-		draw_map(_cur_map)
-		draw_entities(_cur_map)
+		draw_map(cur_map)
+		draw_entities(cur_map)
 		highlight_hover()
 		if _target != nil {
 			highlight(_target.?, COLOR_TARGET)
@@ -363,10 +457,20 @@ draw :: proc() {
 
 /* Game Shutdown */
 shutdown :: proc() {
-	gamemap_destroy(&_cur_map)
+	// if err := save_game(); err != .None {
+	// 	when ODIN_DEBUG {
+	// 		log.errorf("[SHUTDOWN] Error saving game: %v", err)
+	// 	}
+	// }
+
+	for &gm in _maps {
+		gamemap_destroy(&gm)
+	}
+
 	for _, &e in _entity_store {
 		entity_destroy(&e)
 	}
+
 	delete(_entity_store)
 	rl.UnloadMusicStream(_dungeon_music)
 	rl.UnloadSound(_swing_sound)
@@ -392,19 +496,19 @@ spawn :: proc {
 	spawn_consumable,
 }
 
-spawn_mobile :: proc(mob_id: Mobile_ID, is_player := false) -> ObjId {
+spawn_mobile :: proc(mob_id: Mobile_ID, floor_idx: int, is_player := false) -> ObjId {
 	mob := factory_make_mobile(mob_id, is_player)
-	mob.pos = map_random_floor(_cur_map)
+	mob.pos = map_random_floor(_maps[floor_idx])
 	entity_add(mob)
-	gamemap_add_entity(&_cur_map, mob)
+	gamemap_add_entity(&_maps[floor_idx], mob)
 	return mob.id
 }
 
-spawn_consumable :: proc(cons_id: Consumable_ID) -> ObjId {
+spawn_consumable :: proc(cons_id: Consumable_ID, floor_idx: int) -> ObjId {
 	cons := factory_make_consumable(cons_id)
-	cons.pos = map_random_floor(_cur_map)
+	cons.pos = map_random_floor(_maps[floor_idx])
 	entity_add(cons)
-	gamemap_add_entity(&_cur_map, cons)
+	gamemap_add_entity(&_maps[floor_idx], cons)
 	return cons.id
 }
 
@@ -423,10 +527,93 @@ add_msg :: proc(msg: cstring, args: ..any) {
 	delete(formatted)
 }
 
+/* Saving / Loading */
+
+SaveLoad_Err :: enum {
+	None,
+	Failed_Save_Marshal,
+	Failed_Save_Write,
+	Failed_Load_Unmarshal,
+	Failed_Load_Read,
+}
+
+GameSave :: struct {
+	entities:    map[ObjId]Entity,
+	maps:        []GameMap,
+	cur_map_idx: int,
+}
+
+save_game :: proc(loc := #caller_location) -> (err: SaveLoad_Err) {
+	gs: GameSave
+	gs.entities = _entity_store
+	gs.cur_map_idx = _cur_map_idx
+	gs.maps = _maps[:]
+
+	data, marshal_err := cbor.marshal_into_bytes(gs, loc = loc)
+	defer delete(data)
+
+	if marshal_err != nil {
+		when ODIN_DEBUG {
+			log.error("[SAVE] Failed to marshal save file")
+		}
+		err = .Failed_Save_Marshal
+		return
+	}
+
+	if !os.write_entire_file("test.dat", data) {
+		when ODIN_DEBUG {
+			log.error("[SAVE] Failed to write save file")
+		}
+		err = .Failed_Save_Write
+		return
+	}
+
+	return
+}
+
+load_game :: proc(loc := #caller_location) -> (err: SaveLoad_Err) {
+	gs: GameSave
+	data, read_ok := os.read_entire_file("./test.dat", loc = loc)
+	if !read_ok {
+		when ODIN_DEBUG {
+			log.error("[LOAD] Failed to read save file!")
+		}
+		err = .Failed_Load_Read
+		return
+	}
+	defer delete(data)
+
+
+	unmarshal_err := cbor.unmarshal_from_bytes(
+		data,
+		&gs,
+		allocator = context.temp_allocator,
+		loc = loc,
+	)
+	if unmarshal_err != nil {
+		when ODIN_DEBUG {
+			log.error("[LOAD] Failed to load save!")
+		}
+		err = .Failed_Load_Unmarshal
+		return
+	}
+
+	for idx, &e in gs.entities {
+		_entity_store[idx] = entity_clone(e)
+	}
+
+	for &m, i in gs.maps {
+		_maps[i] = gamemap_clone(m)
+	}
+
+	_cur_map_idx = gs.cur_map_idx
+
+	return
+}
+
 /* Main */
 
 main :: proc() {
-
 	when ODIN_DEBUG {
 		track: mem.Tracking_Allocator
 		logger := log.create_console_logger(log.Level.Info)

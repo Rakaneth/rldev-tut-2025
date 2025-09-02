@@ -2,6 +2,7 @@ package main
 
 import "core:c"
 import "core:container/queue"
+import "core:fmt"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
@@ -42,7 +43,32 @@ Atlas_Tile :: enum {
 	Door,
 	Stairs,
 	WallBlock,
+	Aquator,
 	Bat,
+	Centaur,
+	Dragon,
+	Emu,
+	Flytrap,
+	Griffin,
+	Hobgoblin,
+	IceMonster,
+	Jabberwock,
+	Kestrel,
+	Leprechaun,
+	Medusa,
+	Nymph,
+	Orc,
+	Phantom,
+	Quagga,
+	Rattlesnake,
+	Snake,
+	Troll,
+	UmberHulk,
+	Vampire,
+	Wraith,
+	Xeroc,
+	Yeti,
+	Zombie,
 	Potion,
 	Scroll,
 }
@@ -71,7 +97,32 @@ TextureAtlas := [Atlas_Tile]rl.Rectangle {
 	.WallUpperRight = {160, 0, TILE_SIZE, TILE_SIZE},
 	.Corridor       = {16, 32, TILE_SIZE, TILE_SIZE},
 	.Floor          = {0, 32, TILE_SIZE, TILE_SIZE},
+	.Aquator        = {0, 48, TILE_SIZE, TILE_SIZE},
 	.Bat            = {16, 48, TILE_SIZE, TILE_SIZE},
+	.Centaur        = {32, 48, TILE_SIZE, TILE_SIZE},
+	.Dragon         = {48, 48, TILE_SIZE, TILE_SIZE},
+	.Emu            = {64, 48, TILE_SIZE, TILE_SIZE},
+	.Flytrap        = {80, 48, TILE_SIZE, TILE_SIZE},
+	.Griffin        = {96, 48, TILE_SIZE, TILE_SIZE},
+	.Hobgoblin      = {112, 48, TILE_SIZE, TILE_SIZE},
+	.IceMonster     = {128, 48, TILE_SIZE, TILE_SIZE},
+	.Jabberwock     = {144, 48, TILE_SIZE, TILE_SIZE},
+	.Kestrel        = {160, 48, TILE_SIZE, TILE_SIZE},
+	.Leprechaun     = {176, 48, TILE_SIZE, TILE_SIZE},
+	.Medusa         = {192, 48, TILE_SIZE, TILE_SIZE},
+	.Nymph          = {0, 64, TILE_SIZE, TILE_SIZE},
+	.Orc            = {16, 64, TILE_SIZE, TILE_SIZE},
+	.Phantom        = {32, 64, TILE_SIZE, TILE_SIZE},
+	.Quagga         = {48, 64, TILE_SIZE, TILE_SIZE},
+	.Rattlesnake    = {64, 64, TILE_SIZE, TILE_SIZE},
+	.Snake          = {80, 64, TILE_SIZE, TILE_SIZE},
+	.Troll          = {96, 64, TILE_SIZE, TILE_SIZE},
+	.UmberHulk      = {112, 64, TILE_SIZE, TILE_SIZE},
+	.Vampire        = {128, 64, TILE_SIZE, TILE_SIZE},
+	.Wraith         = {144, 64, TILE_SIZE, TILE_SIZE},
+	.Xeroc          = {160, 64, TILE_SIZE, TILE_SIZE},
+	.Yeti           = {176, 64, TILE_SIZE, TILE_SIZE},
+	.Zombie         = {192, 64, TILE_SIZE, TILE_SIZE},
 	.Potion         = {144, 32, TILE_SIZE, TILE_SIZE},
 	.Scroll         = {176, 32, TILE_SIZE, TILE_SIZE},
 }
@@ -202,7 +253,7 @@ draw_map :: proc(m: TerrainData) {
 			}
 			if is_visible_to_player(pos) {
 				draw_cell(to_draw, pos, rl.WHITE)
-			} else if gamemap_is_explored(_cur_map, pos) {
+			} else if gamemap_is_explored(get_cur_map(), pos) {
 				draw_cell(to_draw, pos, rl.BLUE)
 			}
 		}
@@ -330,7 +381,7 @@ get_world_mouse_pos :: proc() -> Point {
 
 highlight_hover :: proc() {
 	mouse_map_pos := get_world_mouse_pos()
-	top_e, num_e := gamemap_get_entity_at(_cur_map, mouse_map_pos)
+	top_e, num_e := gamemap_get_entity_at(get_cur_map(), mouse_map_pos)
 	if num_e == 1 {
 		highlight(top_e.id, COLOR_UI_TEXT)
 		tooltip(top_e.id)
@@ -354,6 +405,7 @@ tooltip :: proc(e_id: ObjId) {
 	rl.DrawRectangleRec(rect, rl.BLACK)
 	rl.DrawRectangleRoundedLinesEx(rect, roundness, 0, border, COLOR_UI_TEXT)
 	rl.DrawTextEx(_font, e.name, {rect.x + border, rect.y + border}, text_size, 0, COLOR_UI_TEXT)
+	draw_effects(e_id, {rect.x + border, rect.y + text_size + border}, text_size)
 	rl.DrawTextEx(
 		_font,
 		e.desc,
@@ -381,5 +433,23 @@ draw_messages :: proc() {
 		idx := (uint(i) + _msg_queue.offset) % uint(MSG_BUFFER_LEN)
 		msg := _msg_queue_data[idx]
 		rl.DrawTextEx(_font, msg, {2, f32(i) * font_size + 2}, font_size, 0, COLOR_UI_TEXT)
+	}
+}
+
+draw_effects :: proc(e_id: ObjId, pos: rl.Vector2, font_size: f32) {
+	sb: strings.Builder
+	strings.builder_init(&sb)
+	defer strings.builder_destroy(&sb)
+	if mob, ok := entity_get_comp(e_id, Mobile); ok {
+		for eff, i in mob.effects {
+			fmt.sbprintf(&sb, "%v[%v]", eff.effect_id, eff.duration)
+			if eff.stacks > 0 {
+				fmt.sbprintf(&sb, " (%v)", eff.stacks)
+			}
+			if i < len(mob.effects) - 1 {
+				fmt.sbprint(&sb, ", ")
+			}
+		}
+		rl.DrawTextEx(_font, strings.to_cstring(&sb), pos, font_size, 0, rl.RED)
 	}
 }

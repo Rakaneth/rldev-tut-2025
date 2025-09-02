@@ -4,53 +4,58 @@
 			"path": "src/main.odin",
 			"bookmarks": [
 				{
-					"line": 10,
+					"line": 15,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 44,
-					"column": 18,
-					"label": ""
-				},
-				{
-					"line": 72,
-					"column": 18,
-					"label": ""
-				},
-				{
-					"line": 123,
-					"column": 10,
-					"label": ""
-				},
-				{
-					"line": 214,
-					"column": 15,
-					"label": ""
-				},
-				{
-					"line": 337,
-					"column": 10,
-					"label": ""
-				},
-				{
-					"line": 363,
-					"column": 15,
-					"label": ""
-				},
-				{
-					"line": 388,
-					"column": 28,
-					"label": ""
-				},
-				{
-					"line": 411,
-					"column": 15,
-					"label": ""
-				},
-				{
-					"line": 425,
+					"line": 55,
 					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 83,
+					"column": 11,
+					"label": ""
+				},
+				{
+					"line": 134,
+					"column": 5,
+					"label": ""
+				},
+				{
+					"line": 299,
+					"column": 0,
+					"label": ""
+				},
+				{
+					"line": 430,
+					"column": 10,
+					"label": ""
+				},
+				{
+					"line": 457,
+					"column": 18,
+					"label": ""
+				},
+				{
+					"line": 492,
+					"column": 20,
+					"label": ""
+				},
+				{
+					"line": 515,
+					"column": 1,
+					"label": ""
+				},
+				{
+					"line": 529,
+					"column": 22,
+					"label": ""
+				},
+				{
+					"line": 613,
+					"column": 10,
 					"label": ""
 				}
 			]
@@ -59,33 +64,38 @@
 			"path": "src/gamemap.odin",
 			"bookmarks": [
 				{
-					"line": 6,
+					"line": 7,
 					"column": 17,
 					"label": ""
 				},
 				{
-					"line": 31,
+					"line": 32,
 					"column": 16,
 					"label": ""
 				},
 				{
-					"line": 67,
+					"line": 68,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 123,
+					"line": 124,
 					"column": 28,
 					"label": ""
 				},
 				{
-					"line": 230,
+					"line": 231,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 353,
+					"line": 359,
 					"column": 28,
+					"label": ""
+				},
+				{
+					"line": 480,
+					"column": 19,
 					"label": ""
 				}
 			]
@@ -104,7 +114,7 @@
 			"path": "src/ui.odin",
 			"bookmarks": [
 				{
-					"line": 9,
+					"line": 10,
 					"column": 12,
 					"label": ""
 				}
@@ -114,7 +124,7 @@
 			"path": "src/entity.odin",
 			"bookmarks": [
 				{
-					"line": 356,
+					"line": 369,
 					"column": 0,
 					"label": ""
 				}

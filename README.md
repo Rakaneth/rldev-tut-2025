@@ -16,8 +16,8 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 * [x] Week 2 - Generic Entity, Render Functions, Map, Generating a Dungeon
 * [x] Week 3 - Field of View, Placing Enemies and Kicking Them
 * [x] Week 4 - Doing and Taking Damage, Interface
-* [x] Week 5 - **Items and Inventory, Ranged Scrolls and Targeting**
-* [ ] Week 6 - Saving and Loading, Delving into the Dungeon
+* [x] Week 5 - Items and Inventory, Ranged Scrolls and Targeting
+* [ ] **Week 6 - Saving and Loading, Delving into the Dungeon**
 * [ ] Week 7 - Increasing Difficulty, Gearing Up
 * [ ] Week 8 - Conclusion
 
@@ -207,12 +207,13 @@ Various game actions, such as attacking, are governed by these four stats. Basic
 * Some monsters and weapons may test AG to attack.
 * Some monster attacks may come with secondary effects.
 
-#### HP and Stamina (partially coded)
+#### HP and Stamina
 
 A creature with 0 HP is **slain.**
-A creature with Fatigue >= Stamina is **exhausted** and must **recover**.
+A creature with Fatigue >= Stamina is **exhausted**.
+An exhausted creature receives a penalty to all rolls equal to (Fatigue - Stamina).
 
-**Recovering** takes an action and removes (WL / 2) Fatigue.
+**Recovering** takes an action and removes (max(HD, WL) / 2) Fatigue.
 
 HP is influenced by HD.
 Stamina is influenced by HD and WL.
@@ -241,3 +242,22 @@ The messaging system is in. The last message produced by the game is displayed o
 
 https://github.com/user-attachments/assets/3e76117a-9fb2-47a4-8d68-2c31d8aafc7b
 
+## Week 6 (2025-08-19) Saving, Loading, Delving
+
+Here it is. The bugaboo of saving and loading. Not sure how I want to tackle this just yet. In the meantime, I will add a structure for other dungeons which I think will be simple to add, given the groundwork I have already laid.
+
+### 2025-08-20
+
+CBOR to the rescue! CBOR is a binary format that can be readily converted to/from JSON (at least, in Odin) and, for this project, seems to require little effort to include. Initial tests show successfully saving and restoring the entities to a file. Full marshalling/unmarshalling with little fuss, as nothing difficult is being stored on entities. Once I get more maps in, I will test saving and loading maps.
+
+### 2025-08-21
+
+Saving / Loading are IN! Turns out that, at least for this use case, CBOR is as painless as Python's `pickle.` I did have to come up with a few procedures to clone `GameMap` and `Entity`, but basic saving and loading are implemented!
+
+The dungeon now has 5 floors (subject to change), and the player can navigate to the very bottom!
+
+Now to do a bit of content generation and make more enemies and items.
+
+## Week 8 (2025-09-02)
+
+I am a bit behind due to some work training and subsequent mental recovery. Monster spawning is in. I intend on getting equipment and the remaining monster data in.

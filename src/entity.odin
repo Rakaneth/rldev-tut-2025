@@ -2,6 +2,7 @@ package main
 
 import "core:log"
 import "core:math"
+import "core:slice"
 import "core:strings"
 import rl "vendor:raylib"
 
@@ -17,7 +18,14 @@ Stat :: enum {
 	WL,
 }
 
-Attack :: distinct [2]int
+// Attack :: distinct [2]int
+
+Attack :: struct {
+	dmg:        [2]int,
+	on_hit:     f32,
+	on_hit_eff: Effect,
+}
+
 
 Mobile :: struct {
 	energy:    int,
@@ -33,6 +41,7 @@ Mobile :: struct {
 	atk_stat:  Stat,
 	base_hp:   int,
 	mobile_id: Mobile_ID,
+	effects:   [dynamic]Effect,
 }
 
 Consumable :: struct {
@@ -107,6 +116,7 @@ entity_destroy :: proc(e: ^Entity, allocator := context.allocator) {
 	#partial switch &variant in e.etype {
 	case Mobile:
 		grid_destroy(&variant.visible)
+		delete(variant.effects)
 	}
 }
 
@@ -118,18 +128,18 @@ entity_get_mut :: proc(id: ObjId) -> ^Entity {
 	return &_entity_store[id]
 }
 
-entity_get_comp :: proc(id: ObjId, $Type: typeid) -> (EntityInst(Type), bool) #optional_ok {
+entity_get_comp :: proc(id: ObjId, $Val: typeid) -> (EntityInst(Val), bool) #optional_ok {
 	maybe_e := _entity_store[id]
-	if comp, ok := maybe_e.etype.(Type); ok {
+	if comp, ok := maybe_e.etype.(Val); ok {
 		return {maybe_e, comp}, true
 	}
 
 	return {}, false
 }
 
-entity_get_comp_mut :: proc(id: ObjId, $Type: typeid) -> (EntityInstMut(Type), bool) #optional_ok {
+entity_get_comp_mut :: proc(id: ObjId, $Val: typeid) -> (EntityInstMut(Val), bool) #optional_ok {
 	maybe_e := &_entity_store[id]
-	if comp, ok := &maybe_e.etype.(Type); ok {
+	if comp, ok := &maybe_e.etype.(Val); ok {
 		return {maybe_e, comp}, true
 	}
 
@@ -148,8 +158,9 @@ entity_remove :: proc(e: ^Entity, allocator := context.allocator) {
 entity_move_by :: proc(e_id: ObjId, dir: Direction) -> MoveResult {
 	e := entity_get_mut(e_id)
 	new_pos := point_by_dir(e.pos, dir)
-	bumped, mob_ok := gamemap_get_mob_at(_cur_map, new_pos)
-	if map_can_walk(_cur_map, new_pos) && !mob_ok {
+	cur_map := get_cur_map()
+	bumped, mob_ok := gamemap_get_mob_at(cur_map, new_pos)
+	if map_can_walk(cur_map, new_pos) && !mob_ok {
 		e.pos = new_pos
 		return .Moved
 	}
@@ -167,6 +178,8 @@ mobile_update_fov :: proc(e_id: ObjId) {
 	if !mob_ok do return
 
 	grid_fill(&mob.visible, false)
+	cur_map := get_cur_map()
+	p_cur_map := get_cur_map_mut()
 
 	for deg in 0 ..< 360 {
 		fx: f32 = math.cos_f32(f32(deg) * math.RAD_PER_DEG)
@@ -176,8 +189,8 @@ mobile_update_fov :: proc(e_id: ObjId) {
 		for v in 0 ..< mob.vision {
 			map_pos := Point{int(ox), int(oy)}
 			grid_set(&mob.visible, map_pos, true)
-			if e_id == PLAYER_ID do gamemap_explore(&_cur_map, map_pos)
-			if map_is_wall_or_null(_cur_map, map_pos) do break
+			if e_id == PLAYER_ID do gamemap_explore(p_cur_map, map_pos)
+			if map_is_wall_or_null(cur_map, map_pos) do break
 			ox += fx
 			oy += fy
 		}
@@ -217,7 +230,7 @@ is_visible_to_player_pos :: proc(pos: Point) -> bool {
 is_visible_to_player_id :: proc(e_id: ObjId) -> bool {
 	e := entity_get(e_id)
 	if e_id not_in _entity_store do return false
-	if _, found := slice_find(_cur_map.entities[:], e_id); !found {
+	if _, found := slice_find(get_cur_map().entities[:], e_id); !found {
 		return false
 	}
 	return is_visible_to_player_pos(e.pos)
@@ -234,7 +247,7 @@ entity_pick_up_item :: proc(grabber: ObjId, grabbed: ObjId) {
 	grabbed_name := entity_get(grabbed).name
 	if grabber_entity.inventory.capacity > len(grabber_entity.inventory.items) {
 		append(&grabber_entity.inventory.items, grabbed)
-		gamemap_remove_entity(&_cur_map, grabbed)
+		gamemap_remove_entity(get_cur_map_mut(), grabbed)
 	}
 	when ODIN_DEBUG {
 		log.infof("%v picks up %v at %v", grabber_entity.name, grabbed_name, grabber_entity.pos)
@@ -252,7 +265,7 @@ entity_drop_item :: proc(dropper: ObjId, dropped: ObjId) {
 	if idx, idx_ok := slice_find(dropper_entity.inventory.items[:], dropped); idx_ok {
 		unordered_remove(&dropper_entity.inventory.items, idx)
 		dropped_entity.pos = dropper_entity.pos
-		gamemap_add_entity(&_cur_map, dropped_entity^)
+		gamemap_add_entity(get_cur_map_mut(), dropped_entity^)
 	}
 
 	when ODIN_DEBUG {
@@ -349,7 +362,7 @@ mobile_on_death :: proc(dead_id: ObjId) {
 	dead_e := entity_get_mut(dead_id)
 	add_msg("%s is slain!", dead_e.name)
 	if dead_id != PLAYER_ID {
-		gamemap_remove_entity(&_cur_map, dead_id)
+		gamemap_remove_entity(get_cur_map_mut(), dead_id)
 		entity_remove(dead_e)
 	}
 }
@@ -409,4 +422,53 @@ entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: i
 	}
 
 	return
+}
+
+//ALLOCATES fresh copies of entity's allocated items
+entity_clone :: proc(
+	e: Entity,
+	allocator := context.allocator,
+	loc := #caller_location,
+) -> Entity {
+	dpl: Entity
+	dpl.name = clone_cstring(e.name)
+	dpl.desc = clone_cstring(e.desc)
+	dpl.color = e.color
+	dpl.pos = e.pos
+	dpl.id = e.id
+	dpl.tile = e.tile
+	dpl.z = e.z
+	dpl.inventory = {
+		capacity = e.inventory.capacity,
+		items    = slice.clone_to_dynamic(e.inventory.items[:], allocator, loc),
+	}
+	if mob, mob_ok := e.etype.(Mobile); mob_ok {
+		dpl.etype = Mobile {
+			energy    = mob.energy,
+			cur_hp    = mob.cur_hp,
+			max_hp    = mob.max_hp,
+			visible   = grid_create(mob.visible.width, mob.visible.height, bool, allocator, loc),
+			vision    = mob.vision,
+			damage    = mob.damage,
+			stats     = mob.stats,
+			stamina   = mob.stamina,
+			fatigue   = mob.fatigue,
+			base_atk  = mob.base_atk,
+			atk_stat  = mob.atk_stat,
+			base_hp   = mob.base_hp,
+			mobile_id = mob.mobile_id,
+		}
+	} else {
+		dpl.etype = e.etype
+	}
+
+	return dpl
+}
+
+mobile_tick_effects :: proc(e_id: ObjId) {
+	if mob, mob_ok := entity_get_comp_mut(e_id, Mobile); mob_ok {
+		for &eff, i in mob.effects {
+			effect_tick(&eff, mob)
+		}
+	}
 }

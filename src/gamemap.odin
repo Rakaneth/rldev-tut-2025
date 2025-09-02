@@ -3,6 +3,7 @@ package main
 import "core:container/queue"
 import "core:fmt"
 import "core:math/rand"
+import "core:slice"
 
 /* Coordinates */
 
@@ -306,10 +307,10 @@ map_make_roomer :: proc(
 	m := grid_create(width, height, Terrain)
 	// grid_fill(&m, Terrain.Floor)
 	outer: for _ in 0 ..< tries {
-		new_x := rand_next_int(min_dim, m.width - min_dim)
-		new_y := rand_next_int(min_dim, m.height - min_dim)
-		new_w := rand_next_int(min_dim, max_dim)
-		new_h := rand_next_int(min_dim, max_dim)
+		new_x := rand_next_int(1, m.width - min_dim)
+		new_y := rand_next_int(1, m.height - min_dim)
+		new_w := rand_next_int(1, max_dim)
+		new_h := rand_next_int(1, max_dim)
 		new_r := rect_from_xywh(new_x, new_y, new_w, new_h)
 
 		if rect_in_bounds(m, new_r) {
@@ -349,6 +350,11 @@ map_make_roomer :: proc(
 	}
 
 	return m
+}
+
+map_add_stairs :: proc(m: ^TerrainData) {
+	stairs := map_random_floor(m^)
+	grid_set(m, stairs, Terrain.StairsDown)
 }
 
 /* Full GameMap structure */
@@ -455,6 +461,21 @@ gamemap_get_entity_at :: proc(gm: GameMap, pos: Point) -> (Entity, int) {
 	}
 
 	return {}, 0
+}
+
+gamemap_clone :: proc(gm: GameMap) -> GameMap {
+	dpl: GameMap
+	dpl.entities = slice.clone_to_dynamic(gm.entities[:])
+	dpl.terrain.data = slice.clone(gm.terrain.data)
+	dpl.terrain.width = gm.terrain.width
+	dpl.terrain.height = gm.terrain.height
+	dpl.explored.data = slice.clone(gm.explored.data)
+	dpl.explored.width = gm.explored.width
+	dpl.explored.height = gm.explored.height
+	dpl.enemy_dmap = grid_create(gm.enemy_dmap.width, gm.enemy_dmap.height, int)
+	grid_fill(&dpl.enemy_dmap, DMAP_SENTINEL)
+
+	return dpl
 }
 
 /* Dijkstra Maps */
