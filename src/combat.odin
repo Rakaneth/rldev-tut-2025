@@ -92,7 +92,18 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 	*/
 	if att_roll, hit := system_stat_test(attacker.type^, attacker.atk_stat); hit {
 		dragon := att_roll == 1
-		raw_dmg := rand_next_int(attacker.base_atk.x, attacker.base_atk.y)
+		base_atk := attacker.base_atk
+		on_hit: bool
+		if base_atk.on_hit > 0 {
+			on_hit = rand_next_float() <= base_atk.on_hit
+			if on_hit {
+				effect_apply(base_atk.on_hit_eff, defender)
+			}
+			when ODIN_DEBUG {
+				log.infof("[SYSTEM] On-hit procced by %v: %v", attacker.name, base_atk.on_hit_eff)
+			}
+		}
+		raw_dmg := rand_next_int(base_atk.dmg.x, base_atk.dmg.y)
 		str_bonus := attacker.atk_stat == .ST ? max(0, attacker.stats[.ST] - 16) : 0
 		dmg := raw_dmg + str_bonus
 

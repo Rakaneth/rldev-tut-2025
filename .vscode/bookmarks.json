@@ -4,57 +4,57 @@
 			"path": "src/main.odin",
 			"bookmarks": [
 				{
-					"line": 14,
+					"line": 15,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 54,
+					"line": 55,
 					"column": 0,
 					"label": ""
 				},
 				{
-					"line": 82,
+					"line": 83,
 					"column": 11,
 					"label": ""
 				},
 				{
-					"line": 133,
+					"line": 134,
 					"column": 5,
 					"label": ""
 				},
 				{
-					"line": 271,
+					"line": 300,
 					"column": 0,
 					"label": ""
 				},
 				{
-					"line": 402,
+					"line": 431,
 					"column": 10,
 					"label": ""
 				},
 				{
-					"line": 429,
+					"line": 458,
 					"column": 18,
 					"label": ""
 				},
 				{
-					"line": 464,
+					"line": 493,
 					"column": 20,
 					"label": ""
 				},
 				{
-					"line": 487,
+					"line": 516,
 					"column": 1,
 					"label": ""
 				},
 				{
-					"line": 501,
+					"line": 530,
 					"column": 22,
 					"label": ""
 				},
 				{
-					"line": 585,
+					"line": 614,
 					"column": 10,
 					"label": ""
 				}
@@ -124,7 +124,7 @@
 			"path": "src/entity.odin",
 			"bookmarks": [
 				{
-					"line": 362,
+					"line": 369,
 					"column": 0,
 					"label": ""
 				}

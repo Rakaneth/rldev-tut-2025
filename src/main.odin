@@ -6,6 +6,7 @@ import "core:encoding/cbor"
 import "core:fmt"
 import "core:io"
 import "core:log"
+import "core:math/rand"
 import "core:mem"
 import "core:os"
 import "core:slice"
@@ -32,8 +33,8 @@ NUM_FLOORS :: 5
 F0_MOBS :: 5
 F1_MOBS :: 10
 F2_MOBS :: 10
-F3_MOBS :: 15
-F4_MOBS :: 20
+F3_MOBS :: 13
+F4_MOBS :: 15
 
 GameState :: enum {
 	Input,
@@ -251,12 +252,40 @@ move_to_floor :: proc(floor_idx: int) {
 	mobile_update_fov(PLAYER_ID)
 }
 
-build_floors :: proc() {
+spawn_monsters :: proc(floor_id: int) {
+	mob_check := rand_next_int(1, 100)
+	mob_to_spawn: Mobile_ID
+	mob_sets := [5]bit_set[Mobile_ID]{Tier0, Tier1, Tier2, Tier3, Tier4}
 	num_mobs := [5]int{F0_MOBS, F1_MOBS, F2_MOBS, F3_MOBS, F4_MOBS}
+	for _ in 0 ..< num_mobs[floor_id] {
+		switch {
+		case mob_check < 20:
+			if floor_id > 0 {
+				mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id - 1])
+			}
+
+		case mob_check >= 20 && mob_check < 70:
+			if floor_id < len(_maps) - 1 {
+				mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id])
+			}
+
+		case mob_check >= 70 && mob_check < 90:
+			mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id + 1])
+		case:
+			continue
+		}
+		if mob_to_spawn != .Hero {
+			spawn(mob_to_spawn, floor_id)
+		}
+	}
+}
+
+build_floors :: proc() {
 	for &m, i in _maps {
 		if i < len(_maps) - 1 {
 			map_add_stairs(&m.terrain)
 		}
+		spawn_monsters(i)
 	}
 }
 
@@ -429,11 +458,11 @@ draw :: proc() {
 
 /* Game Shutdown */
 shutdown :: proc() {
-	if err := save_game(); err != .None {
-		when ODIN_DEBUG {
-			log.errorf("[SHUTDOWN] Error saving game: %v", err)
-		}
-	}
+	// if err := save_game(); err != .None {
+	// 	when ODIN_DEBUG {
+	// 		log.errorf("[SHUTDOWN] Error saving game: %v", err)
+	// 	}
+	// }
 
 	for &gm in _maps {
 		gamemap_destroy(&gm)

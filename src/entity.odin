@@ -18,7 +18,14 @@ Stat :: enum {
 	WL,
 }
 
-Attack :: distinct [2]int
+// Attack :: distinct [2]int
+
+Attack :: struct {
+	dmg:        [2]int,
+	on_hit:     f32,
+	on_hit_eff: Effect,
+}
+
 
 Mobile :: struct {
 	energy:    int,
