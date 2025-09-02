@@ -257,3 +257,7 @@ Saving / Loading are IN! Turns out that, at least for this use case, CBOR is as 
 The dungeon now has 5 floors (subject to change), and the player can navigate to the very bottom!
 
 Now to do a bit of content generation and make more enemies and items.
+
+## Week 8 (2025-09-02)
+
+I am a bit behind due to some work training and subsequent mental recovery. Monster spawning is in. I intend on getting equipment and the remaining monster data in.
