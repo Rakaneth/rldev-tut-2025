@@ -209,7 +209,6 @@ init :: proc() {
 		effect_id = .Poison,
 	}
 	player_mob := entity_get_comp_mut(PLAYER_ID, Mobile)
-	effect_apply(poison, player_mob)
 }
 
 get_player :: proc() -> Entity {
