@@ -280,6 +280,9 @@ Tier1: bit_set[Mobile_ID] = {.Hobgoblin, .Orc, .Rattlesnake, .Zombie}
 Tier2: bit_set[Mobile_ID] = {.Troll, .Centaur, .Aquator, .Leprechaun, .Wraith, .Flytrap}
 Tier3: bit_set[Mobile_ID] = {.Griffin, .IceMonster, .Nymph, .Phantom, .Quagga, .UmberHulk}
 Tier4: bit_set[Mobile_ID] = {.Dragon, .Jabberwock, .Yeti, .Medusa, .Vampire, .Wraith}
+StatPots: bit_set[Consumable_ID] = {.Potion_ST, .Potion_HD, .Potion_AG, .Potion_WL}
+Consums: bit_set[Consumable_ID] = {.Potion_Healing, .Scroll_Lightning}
+
 
 @(rodata)
 CONSUMABLES := [Consumable_ID]BP_Consumable {

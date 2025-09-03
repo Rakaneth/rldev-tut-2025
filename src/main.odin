@@ -31,10 +31,16 @@ DMAP_SENTINEL :: 9999
 MSG_BUFFER_LEN :: 50
 NUM_FLOORS :: 5
 F0_MOBS :: 5
+F0_CONS :: 3
 F1_MOBS :: 10
+F1_CONS :: 5
 F2_MOBS :: 10
+F2_CONS :: 5
 F3_MOBS :: 13
+F3_CONS :: 5
 F4_MOBS :: 15
+F4_CONS :: 7
+
 
 GameState :: enum {
 	Input,
@@ -245,29 +251,44 @@ move_to_floor :: proc(floor_idx: int) {
 }
 
 spawn_monsters :: proc(floor_id: int) {
-	mob_check := rand_next_int(1, 100)
 	mob_to_spawn: Mobile_ID
 	mob_sets := [5]bit_set[Mobile_ID]{Tier0, Tier1, Tier2, Tier3, Tier4}
 	num_mobs := [5]int{F0_MOBS, F1_MOBS, F2_MOBS, F3_MOBS, F4_MOBS}
 	for _ in 0 ..< num_mobs[floor_id] {
+		mob_check := rand_next_int(1, 100)
 		switch {
-		case mob_check < 20:
+		case mob_check <= 20:
 			if floor_id > 0 {
 				mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id - 1])
 			}
-
-		case mob_check >= 20 && mob_check < 70:
+		case mob_check > 20 && mob_check <= 70:
+			mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id])
+		case mob_check > 70 && mob_check <= 90:
 			if floor_id < len(_maps) - 1 {
-				mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id])
+				mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id + 1])
 			}
-
-		case mob_check >= 70 && mob_check < 90:
-			mob_to_spawn, _ = rand.choice_bit_set(mob_sets[floor_id + 1])
 		case:
 			continue
 		}
 		if mob_to_spawn != .Hero {
 			spawn(mob_to_spawn, floor_id)
+		}
+	}
+}
+
+spawn_consumables :: proc(floor_id: int) {
+	cons_to_spawn: Consumable_ID
+	num_cons := [5]int{F0_CONS, F1_CONS, F2_CONS, F3_CONS, F4_CONS}
+	for _ in 0 ..< num_cons[floor_id] {
+		cons_check := rand_next_int(1, 100)
+		if cons_check <= 45 {
+			stat_check := rand_next_int(1, 100)
+			if stat_check <= 20 {
+				cons_to_spawn, _ = rand.choice_bit_set(StatPots)
+			} else {
+				cons_to_spawn, _ = rand.choice_bit_set(Consums)
+			}
+			spawn_consumable(cons_to_spawn, floor_id)
 		}
 	}
 }
@@ -278,6 +299,7 @@ build_floors :: proc() {
 			map_add_stairs(&m.terrain)
 		}
 		spawn_monsters(i)
+		spawn_consumables(i)
 	}
 }
 
