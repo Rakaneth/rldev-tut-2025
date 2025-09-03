@@ -202,13 +202,6 @@ init :: proc() {
 
 	_dam_timer = DAMAGE_TIMER
 	mobile_update_fov(PLAYER_ID)
-
-	//testing
-	poison := Effect {
-		duration  = 3,
-		effect_id = .Poison,
-	}
-	player_mob := entity_get_comp_mut(PLAYER_ID, Mobile)
 }
 
 get_player :: proc() -> Entity {

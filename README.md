@@ -17,8 +17,8 @@ Greetings! This is my entry in [/r/roguelikedev's](https://www.reddit.com/r/rogu
 * [x] Week 3 - Field of View, Placing Enemies and Kicking Them
 * [x] Week 4 - Doing and Taking Damage, Interface
 * [x] Week 5 - Items and Inventory, Ranged Scrolls and Targeting
-* [ ] **Week 6 - Saving and Loading, Delving into the Dungeon**
-* [ ] Week 7 - Increasing Difficulty, Gearing Up
+* [x] Week 6 - Saving and Loading, Delving into the Dungeon
+* [ ] **Week 7 - Increasing Difficulty, Gearing Up**
 * [ ] Week 8 - Conclusion
 
 ## Week 1 (2025-07-15) - Development environment, moving @
