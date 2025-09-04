@@ -396,8 +396,10 @@ tooltip :: proc(e_id: ObjId) {
 	e := entity_get(e_id)
 	s_pos := loc_to_screen(e.pos)
 	desc_m := rl.MeasureTextEx(_font, e.desc, text_size, 0)
+	rect_x :=
+		(desc_m.x + border + s_pos.x >= WORLD_PIX_W) ? max(s_pos.x - (desc_m.x + border), border) : s_pos.x - border
 	rect := rl.Rectangle {
-		s_pos.x - border,
+		rect_x,
 		s_pos.y - border - (3 * text_size),
 		desc_m.x + border + padding,
 		(desc_m.y + border) * 3,
