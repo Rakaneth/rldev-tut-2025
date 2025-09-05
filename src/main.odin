@@ -201,7 +201,11 @@ init :: proc() {
 		_maps[4] = gamemap_create(fifth_floor)
 
 		build_floors()
+		swd := factory_make_weapon(.Sword_Brittle)
+		entity_add(swd)
 		spawn(Mobile_ID.Hero, 0, true)
+		entity_pick_up_item(PLAYER_ID, swd.id)
+		mobile_equip_weapon(PLAYER_ID, swd.id)
 	}
 
 	queue.init_from_slice(&_msg_queue, _msg_queue_data[:])
@@ -221,7 +225,14 @@ get_player_mut :: proc() -> ^Entity {
 item_try_use :: proc(user: ObjId, idx: int) -> bool {
 	user_e, mob_ok := entity_get_comp(user, Mobile)
 	if len(user_e.inventory.items) > idx && mob_ok {
-		mobile_use_consumable(user, user_e.inventory.items[idx])
+		item := entity_get(user_e.inventory.items[idx])
+		#partial switch item_type in item.etype {
+		case Consumable:
+			mobile_use_consumable(user, item.id)
+		case Weapon:
+			mobile_equip_weapon(user, item.id)
+		}
+
 		return true
 	}
 
@@ -273,6 +284,9 @@ spawn_monsters :: proc(floor_id: int) {
 		if mob_to_spawn != .Hero {
 			spawn(mob_to_spawn, floor_id)
 		}
+	}
+	if floor_id == len(_maps) - 1 {
+		spawn(Mobile_ID.Dragon, floor_id)
 	}
 }
 
@@ -509,6 +523,7 @@ shutdown :: proc() {
 spawn :: proc {
 	spawn_mobile,
 	spawn_consumable,
+	spawn_weapon,
 }
 
 spawn_mobile :: proc(mob_id: Mobile_ID, floor_idx: int, is_player := false) -> ObjId {
@@ -525,6 +540,14 @@ spawn_consumable :: proc(cons_id: Consumable_ID, floor_idx: int) -> ObjId {
 	entity_add(cons)
 	gamemap_add_entity(&_maps[floor_idx], cons)
 	return cons.id
+}
+
+spawn_weapon :: proc(weap_id: Weapon_ID, floor_idx: int) -> ObjId {
+	weap := factory_make_weapon(weap_id)
+	weap.pos = map_random_floor(_maps[floor_idx])
+	entity_add(weap)
+	gamemap_add_entity(&_maps[floor_idx], weap)
+	return weap.id
 }
 
 

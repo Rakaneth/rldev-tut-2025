@@ -71,6 +71,9 @@ Atlas_Tile :: enum {
 	Zombie,
 	Potion,
 	Scroll,
+	Sword,
+	Staff,
+	Armor,
 }
 
 @(rodata)
@@ -125,6 +128,9 @@ TextureAtlas := [Atlas_Tile]rl.Rectangle {
 	.Zombie         = {192, 64, TILE_SIZE, TILE_SIZE},
 	.Potion         = {144, 32, TILE_SIZE, TILE_SIZE},
 	.Scroll         = {176, 32, TILE_SIZE, TILE_SIZE},
+	.Sword          = {112, 16, TILE_SIZE, TILE_SIZE},
+	.Staff          = {128, 16, TILE_SIZE, TILE_SIZE},
+	.Armor          = {128, 16, TILE_SIZE, TILE_SIZE},
 }
 
 draw_tile :: proc(tile: Atlas_Tile, x: f32, y: f32, tint: rl.Color) {
@@ -323,13 +329,21 @@ draw_combat_text :: proc(e: Entity, text: cstring) {
 draw_item_menu :: proc() {
 	item_ids := get_player().inventory.items
 	font_size := f32(TILE_SIZE * 3 / 4)
-
+	txt: cstring
 	i := 0
 
 	if len(item_ids) > 0 {
 		for item_id in item_ids {
-			item := entity_get_comp(item_id, Consumable)
-			txt := rl.TextFormat("%d: %s x%d", i + 1, item.name, item.uses)
+			item := entity_get(item_id)
+
+			#partial switch thing in item.etype {
+			case Consumable:
+				txt = rl.TextFormat("%d: %s x%d", i + 1, item.name, thing.uses)
+			case Weapon:
+				eq_txt := thing.equipped ? " [E]" : ""
+				txt = rl.TextFormat("%d: %s%s", i + 1, item.name, eq_txt)
+			}
+
 			rl.DrawTextEx(
 				_font,
 				txt,

@@ -23,7 +23,10 @@ Stat :: enum {
 Attack :: struct {
 	dmg:        [2]int,
 	on_hit:     f32,
-	on_hit_eff: Effect,
+	on_hit_eff: union {
+		Effect,
+		Effect_Proc,
+	},
 }
 
 
@@ -42,11 +45,23 @@ Mobile :: struct {
 	base_hp:   int,
 	mobile_id: Mobile_ID,
 	effects:   [dynamic]Effect,
+	gold:      int,
 }
 
 Consumable :: struct {
 	uses:          int,
 	consumable_id: Consumable_ID,
+}
+
+Weapon :: struct {
+	atk_mod:  int,
+	atk:      Attack,
+	equipped: bool,
+	atk_stat: Stat,
+}
+
+Gold :: struct {
+	amt: int,
 }
 
 Inventory :: struct {
@@ -57,6 +72,7 @@ Inventory :: struct {
 EntityType :: union #no_nil {
 	Mobile,
 	Consumable,
+	Weapon,
 }
 
 Entity :: struct {
@@ -424,6 +440,46 @@ entities_at_pos :: proc(it: ^EntityIterator, pos: Point) -> (val: Entity, idx: i
 	return
 }
 
+weapons_in_inv :: proc(it: ^EntityIterator) -> (val: EntityInst(Weapon), idx: int, cond: bool) {
+	for ; cond; cond = it.index < len(it.data) {
+		weap, ok := entity_get_comp(it.data[it.index], Weapon)
+		if !ok {
+			it.index += 1
+			continue
+		}
+
+		val = weap
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
+}
+
+weapons_in_inv_mut :: proc(
+	it: ^EntityIterator,
+) -> (
+	val: EntityInstMut(Weapon),
+	idx: int,
+	cond: bool,
+) {
+	for ; cond; cond = it.index < len(it.data) {
+		weap, ok := entity_get_comp_mut(it.data[it.index], Weapon)
+		if !ok {
+			it.index += 1
+			continue
+		}
+
+		val = weap
+		idx = it.index
+		it.index += 1
+		break
+	}
+
+	return
+}
+
 //ALLOCATES fresh copies of entity's allocated items
 entity_clone :: proc(
 	e: Entity,
@@ -470,5 +526,44 @@ mobile_tick_effects :: proc(e_id: ObjId) {
 		for &eff, i in mob.effects {
 			effect_tick(&eff, mob)
 		}
+	}
+}
+
+mobile_get_equipped_weapon :: proc(e_id: ObjId) -> (EntityInst(Weapon), bool) {
+	if mob, ok := entity_get_comp(e_id, Mobile); ok {
+		it := make_entity_iterator(mob.inventory.items[:])
+		for weap in weapons_in_inv(&it) {
+			if weap.equipped {
+				return weap, true
+			}
+		}
+	}
+
+	return {}, false
+}
+
+mobile_get_equipped_weapon_mut :: proc(e_id: ObjId) -> (EntityInstMut(Weapon), bool) {
+	if mob, ok := entity_get_comp(e_id, Mobile); ok {
+		it := make_entity_iterator(mob.inventory.items[:])
+		for weap in weapons_in_inv_mut(&it) {
+			if weap.equipped {
+				return weap, true
+			}
+		}
+	}
+
+	return {}, false
+}
+
+mobile_equip_weapon :: proc(e_id: ObjId, weap_id: ObjId) {
+	mob, mob_ok := entity_get_comp_mut(e_id, Mobile)
+	weap, weap_ok := entity_get_comp_mut(weap_id, Weapon)
+	if mob_ok && weap_ok {
+		if old_weap, old_weap_ok := mobile_get_equipped_weapon_mut(e_id); old_weap_ok {
+			old_weap.equipped = false
+			add_msg("%s unequips %s", mob.name, weap.name)
+		}
+		weap.equipped = true
+		add_msg("%s equips %s", mob.name, weap.name)
 	}
 }

@@ -40,9 +40,9 @@ system_roll_fallen_hero_stats :: proc(out: []int) {
 	}
 }
 
-system_stat_test :: proc(mob: Mobile, stat: Stat) -> (int, bool) {
+system_stat_test :: proc(mob: Mobile, stat: Stat, modifier := 0) -> (int, bool) {
 	ftg_penalty := max(mob.fatigue - mob.stamina, 0)
-	r := system_rolld20() + ftg_penalty
+	r := system_rolld20() + ftg_penalty - modifier
 	return r, mob.stats[stat] >= r
 }
 
@@ -90,20 +90,29 @@ system_basic_attack :: proc(attacker, defender: EntityInstMut(Mobile)) {
 		nat 1s are called "dragons"
 		nat 20s are called "demons"
 	*/
-	if att_roll, hit := system_stat_test(attacker.type^, attacker.atk_stat); hit {
+	wpn, wpn_ok := mobile_get_equipped_weapon(attacker.id)
+	stat := wpn_ok ? wpn.atk_stat : attacker.atk_stat
+	if att_roll, hit := system_stat_test(attacker.type^, stat, wpn.atk_mod); hit {
 		dragon := att_roll == 1
-		base_atk := attacker.base_atk
+		atk := wpn_ok ? wpn.atk : attacker.base_atk
 		on_hit: bool
-		if base_atk.on_hit > 0 {
-			on_hit = rand_next_float() <= base_atk.on_hit
-			if on_hit {
-				effect_apply(base_atk.on_hit_eff, defender)
+		if atk.on_hit > 0 {
+			on_hit = rand_next_float() <= atk.on_hit
+			if on_hit && atk.on_hit_eff != nil {
+				eff_to_apply: Effect
+				switch eff in atk.on_hit_eff {
+				case Effect:
+					eff_to_apply = eff
+				case Effect_Proc:
+					eff_to_apply = eff(attacker.etype.(Mobile))
+				}
+				effect_apply(eff_to_apply, defender)
 			}
 			when ODIN_DEBUG {
-				log.infof("[SYSTEM] On-hit procced by %v: %v", attacker.name, base_atk.on_hit_eff)
+				log.infof("[SYSTEM] On-hit procced by %v: %v", attacker.name, atk.on_hit_eff)
 			}
 		}
-		raw_dmg := rand_next_int(base_atk.dmg.x, base_atk.dmg.y)
+		raw_dmg := rand_next_int(atk.dmg.x, atk.dmg.y)
 		str_bonus := attacker.atk_stat == .ST ? max(0, attacker.stats[.ST] - 16) : 0
 		dmg := raw_dmg + str_bonus
 
@@ -241,4 +250,20 @@ system_cast_lb :: proc(caster, target: EntityInstMut(Mobile)) {
 		}
 	}
 	caster.fatigue += 3
+}
+
+snakes_apply_poison :: proc(snake: Mobile) -> Effect {
+	return {effect_id = .Poison, duration = snake.stats[.HD] / 5}
+}
+
+aquator_apply_poison :: proc(aquator: Mobile) -> Effect {
+	return {effect_id = .Poison, duration = aquator.stats[.HD] / 4}
+}
+
+dragon_apply_burning :: proc(dragon: Mobile) -> Effect {
+	return {effect_id = .Burn, duration = dragon.stats[.HD] / 4, stacks = dragon.stats[.ST] / 4}
+}
+
+wraith_apply_paralyze :: proc(wraith: Mobile) -> Effect {
+	return {effect_id = .Paralyze, duration = wraith.stats[.WL] / 5}
 }

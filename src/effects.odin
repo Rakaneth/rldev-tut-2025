@@ -12,6 +12,8 @@ Effect_Names :: enum {
 	Paralyze,
 }
 
+Effect_Proc :: proc(mob: Mobile) -> Effect
+
 effect_merge :: proc(eff: ^Effect, to_merge: Effect) {
 	switch to_merge.effect_id {
 	case .Burn:

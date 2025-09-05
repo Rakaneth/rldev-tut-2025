@@ -32,13 +32,16 @@ BP_Consumable :: struct {
 }
 
 BP_Weapon :: struct {
-	atk_mod: int,
-	atk:     Attack,
+	atk_mod:    int,
+	atk:        Attack,
+	using base: BP_Base,
+	atk_stat:   Stat,
 }
 
 BP_Armor :: struct {
 	doj_mod:    int,
 	protection: int,
+	using base: BP_Base,
 }
 
 Mobile_ID :: enum {
@@ -100,8 +103,17 @@ Armor_ID :: enum {
 	Breastplate,
 }
 
+WEAPONS := #partial [Weapon_ID]BP_Weapon {
+	.Sword_Brittle = {
+		name = "Brittle Sword",
+		desc = "A brittle, well-used blade",
+		tile = .Sword,
+		color = {0xB7, 0x41, 0x0E, 0xFF},
+		atk = {dmg = {1, 6}},
+		atk_mod = -1,
+	},
+}
 
-@(rodata)
 MOBILES := [Mobile_ID]BP_Mobile {
 	.Hero = {
 		name = "Hero",
@@ -117,7 +129,19 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		wl = {10, 10},
 		base_atk = {dmg = {1, 2}},
 	},
-	.Aquator = {},
+	.Aquator = {
+		name = "Aquator",
+		desc = "A beast from the depths",
+		tile = .Aquator,
+		color = rl.WHITE,
+		hp = 15,
+		vision = 6,
+		st = {10, 15},
+		hd = {10, 15},
+		ag = {10, 15},
+		wl = {10, 15},
+		base_atk = {dmg = {2, 6}, on_hit = 0.2, on_hit_eff = aquator_apply_poison},
+	},
 	.Bat = {
 		name = "Bat",
 		desc = "A squeaky Bat",
@@ -126,14 +150,38 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		hp = 5,
 		vision = 4,
 		st = {5, 8},
-		ag = {12, 15},
 		hd = {8, 10},
+		ag = {12, 15},
 		wl = {1, 1},
 		base_atk = {dmg = {1, 2}},
 		atk_stat = .AG,
 	},
-	.Centaur = {},
-	.Dragon = {},
+	.Centaur = {
+		name = "Centaur",
+		desc = "A fierce horse-man warrior",
+		tile = .Centaur,
+		color = rl.WHITE,
+		hp = 15,
+		vision = 6,
+		st = {12, 17},
+		hd = {10, 15},
+		ag = {12, 17},
+		wl = {8, 13},
+		base_atk = {dmg = {2, 8}},
+	},
+	.Dragon = {
+		name = "Dragon",
+		desc = "A red-scaled, fire-breathing dragon",
+		tile = .Dragon,
+		color = rl.RED,
+		hp = 50,
+		vision = 10,
+		st = {20, 25},
+		hd = {20, 25},
+		ag = {15, 20},
+		wl = {20, 25},
+		base_atk = {dmg = {3, 18}, on_hit = 0.35, on_hit_eff = dragon_apply_burning},
+	},
 	.Emu = {
 		name = "Emu",
 		desc = "A tall, aggressive, flightless bird",
@@ -148,8 +196,36 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		base_atk = {dmg = {1, 4}},
 		atk_stat = .ST,
 	},
-	.Flytrap = {},
-	.Griffin = {},
+	.Flytrap = {
+		name = "Flytrap",
+		desc = "A large, carnivorous plant",
+		tile = .Flytrap,
+		color = rl.WHITE,
+		hp = 5,
+		vision = 5,
+		st = {10, 15},
+		hd = {10, 15},
+		ag = {1, 5},
+		wl = {2, 5},
+		base_atk = {
+			dmg = {1, 6},
+			on_hit = 0.20,
+			on_hit_eff = Effect{effect_id = .Paralyze, duration = 1},
+		},
+	},
+	.Griffin = {
+		name = "Griffin",
+		desc = "A cross between an eagle and a lion",
+		tile = .Griffin,
+		color = rl.WHITE,
+		hp = 15,
+		vision = 7,
+		st = {12, 17},
+		hd = {12, 17},
+		ag = {10, 15},
+		wl = {2, 5},
+		base_atk = {dmg = {1, 10}},
+	},
 	.Hobgoblin = {
 		name = "Hobgoblin",
 		desc = "A hobgoblin, leader of the goblin tribes",
@@ -164,8 +240,36 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		base_atk = {dmg = {1, 4}},
 		atk_stat = .ST,
 	},
-	.IceMonster = {},
-	.Jabberwock = {},
+	.IceMonster = {
+		name = "Ice Monster",
+		desc = "A man-shaped creature made from ice",
+		tile = .IceMonster,
+		color = rl.WHITE,
+		hp = 15,
+		vision = 4,
+		st = {12, 17},
+		hd = {15, 20},
+		ag = {2, 5},
+		wl = {2, 5},
+		base_atk = {
+			dmg = {2, 8},
+			on_hit = 0.15,
+			on_hit_eff = Effect{effect_id = .Paralyze, duration = 3},
+		},
+	},
+	.Jabberwock = {
+		name = "Jabberwock",
+		desc = "With jaws that bite and claws that catch",
+		tile = .Jabberwock,
+		color = rl.WHITE,
+		hp = 25,
+		vision = 6,
+		st = {20, 25},
+		hd = {15, 20},
+		ag = {10, 15},
+		wl = {8, 13},
+		base_atk = {dmg = {2, 24}},
+	},
 	.Kestrel = {
 		name = "Kestrel",
 		desc = "A beautiful bird trapped in the dungeon",
@@ -174,13 +278,26 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		hp = 5,
 		vision = 8,
 		st = {1, 5},
-		ag = {12, 15},
 		hd = {5, 8},
+		ag = {12, 15},
 		wl = {1, 1},
 		base_atk = {dmg = {1, 1}},
 		atk_stat = .AG,
 	},
-	.Leprechaun = {},
+	.Leprechaun = {
+		name = "Leprechaun",
+		desc = "A tiny fellow with a ginger beard and a top-hat",
+		tile = .Leprechaun,
+		color = rl.WHITE,
+		hp = 10,
+		vision = 6,
+		st = {5, 10},
+		hd = {5, 10},
+		ag = {10, 15},
+		wl = {12, 17},
+		base_atk = {dmg = {1, 8}},
+		atk_stat = .WL,
+	},
 	.Medusa = {},
 	.Nymph = {},
 	.Orc = {
@@ -210,7 +327,7 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		hd = {5, 10},
 		ag = {12, 17},
 		wl = {2, 5},
-		base_atk = {dmg = {1, 3}, on_hit = 0.3, on_hit_eff = {effect_id = .Poison, duration = 5}},
+		base_atk = {dmg = {1, 3}, on_hit = 0.3, on_hit_eff = snakes_apply_poison},
 		atk_stat = .AG,
 	},
 	.Snake = {
@@ -224,10 +341,22 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		hd = {2, 5},
 		ag = {10, 15},
 		wl = {2, 5},
-		base_atk = {dmg = {1, 2}, on_hit = .2, on_hit_eff = {effect_id = .Poison, duration = 3}},
+		base_atk = {dmg = {1, 2}, on_hit = .2, on_hit_eff = snakes_apply_poison},
 		atk_stat = .AG,
 	},
-	.Troll = {},
+	.Troll = {
+		name = "Troll",
+		desc = "A repugnant giant that eats anything it catches",
+		tile = .Troll,
+		color = rl.WHITE,
+		hp = 30,
+		vision = 7,
+		st = {12, 17},
+		hd = {15, 20},
+		ag = {1, 3},
+		wl = {1, 3},
+		base_atk = {dmg = {1, 10}},
+	},
 	.UmberHulk = {},
 	.Vampire = {},
 	.Wraith = {
@@ -241,7 +370,7 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		hd = {8, 13},
 		ag = {10, 15},
 		wl = {13, 18},
-		base_atk = {dmg = {1, 4}},
+		base_atk = {dmg = {1, 4}, on_hit = 0.25, on_hit_eff = wraith_apply_paralyze},
 		atk_stat = .WL,
 	},
 	.Xeroc = {},
@@ -256,7 +385,7 @@ MOBILES := [Mobile_ID]BP_Mobile {
 		hd = {15, 20},
 		ag = {5, 10},
 		wl = {5, 10},
-		base_atk = {dmg = {1, 8}},
+		base_atk = {dmg = {2, 16}},
 		atk_stat = .ST,
 	},
 	.Zombie = {
@@ -279,7 +408,7 @@ Tier0: bit_set[Mobile_ID] = {.Bat, .Kestrel, .Snake, .Emu}
 Tier1: bit_set[Mobile_ID] = {.Hobgoblin, .Orc, .Rattlesnake, .Zombie}
 Tier2: bit_set[Mobile_ID] = {.Troll, .Centaur, .Aquator, .Leprechaun, .Wraith, .Flytrap}
 Tier3: bit_set[Mobile_ID] = {.Griffin, .IceMonster, .Nymph, .Phantom, .Quagga, .UmberHulk}
-Tier4: bit_set[Mobile_ID] = {.Dragon, .Jabberwock, .Yeti, .Medusa, .Vampire, .Wraith}
+Tier4: bit_set[Mobile_ID] = {.Jabberwock, .Yeti, .Medusa, .Vampire, .Wraith}
 StatPots: bit_set[Consumable_ID] = {.Potion_ST, .Potion_HD, .Potion_AG, .Potion_WL}
 Consums: bit_set[Consumable_ID] = {.Potion_Healing, .Scroll_Lightning}
 
@@ -397,6 +526,22 @@ factory_make_consumable :: proc(cons_id: Consumable_ID) -> Entity {
 		template.desc,
 		template.tile,
 		Consumable{uses = template.uses, consumable_id = cons_id},
+		template.color,
+	)
+
+	_cur_id += 1
+	return e
+}
+
+factory_make_weapon :: proc(weap_id: Weapon_ID) -> Entity {
+	template := WEAPONS[weap_id]
+
+	e := entity_create(
+		_cur_id,
+		template.name,
+		template.desc,
+		template.tile,
+		Weapon{atk = template.atk, atk_mod = template.atk_mod, atk_stat = template.atk_stat},
 		template.color,
 	)
 
